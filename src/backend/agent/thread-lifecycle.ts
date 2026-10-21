@@ -64,8 +64,9 @@ const logger = createOpenBotLogger("thread-lifecycle");
  * the managed tool runtimes joining the fingerprint, so a session started before Bun finished
  * downloading is replaced once its servers can actually start, 5 is the plan tool below, and 6 is
  * server names in the form Codex accepts. Version 7 keeps approvals for custom MCP servers.
+ * Version 8 refreshes the instructions that allow requested desktop browser access.
  */
-const CODEX_MCP_ADAPTER_VERSION = 7;
+const CODEX_MCP_ADAPTER_VERSION = 8;
 
 /**
  * Codex offers `update_plan` only when this is on, and without it a turn sends no

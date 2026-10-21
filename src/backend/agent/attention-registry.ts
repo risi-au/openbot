@@ -55,6 +55,7 @@ import { type BrowserToolArguments, parseBrowserToolCall } from "../browser-tool
 import { causeHelpers } from "../effect-boundary";
 import { LINK_CARD_ID_PREFIX, type LinkWallet } from "../link-wallet";
 import { type PasswordVault, type PasswordVaultError, websiteUrl } from "../password-vault";
+import { HYPRUSE_MCP_SERVER_NAME } from "../personal-computer-use";
 import {
   type AppServerRequest,
   type DynamicToolCallParams,
@@ -1760,7 +1761,8 @@ export class AttentionRegistry {
   #answerMcpToolConsentWithoutAsking(client: AgentClient, request: AppServerRequest, agentId: string): boolean {
     if (
       process.env.OPENBOT_PERSONAL_MODE === "1" &&
-      getString(request.params, "serverName") === COMPUTER_USE_MCP_SERVER_NAME &&
+      (getString(request.params, "serverName") === COMPUTER_USE_MCP_SERVER_NAME ||
+        getString(request.params, "serverName") === HYPRUSE_MCP_SERVER_NAME) &&
       !this.#computerUseEnabled(agentId)
     )
       return false;

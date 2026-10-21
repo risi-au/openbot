@@ -1,5 +1,7 @@
 ### Changed
 
+- The optional Hypruse connection selects background desktop tools in personal mode. Disabling it restores CUA. Its pinned launcher blocks accessibility focus.
+
 - The personal desktop fork opens local workspaces without an OpenBot email account. Cloud requests still require account authentication.
 - Provider settings and state use the fork's private home. Automatic workspace skills and saved-memory access are disabled in personal mode.
 - The fork uses a separate app profile and does not accept upstream application updates.

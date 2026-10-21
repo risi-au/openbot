@@ -42,6 +42,9 @@ asarUnpack:
   # The FFI addon that stops the Dynamic Island panel from activating the app on macOS.
   - node_modules/@koromix/koffi-*/**/*
 extraResources:
+  - from: resources/hypruse
+    to: hypruse
+    filter: ["**/*.py"]
   - from: resources/managed-skills
     to: managed-skills
   - from: resources/plugin-catalog

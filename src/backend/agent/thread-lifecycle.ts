@@ -46,6 +46,7 @@ import {
   toMcpShapeFailed,
   usableMcpServers,
 } from "../mcp-provider-shapes";
+import { personalHypruseEnabled } from "../personal-computer-use";
 import { decodeRecordResponse, decodeThreadResponse, getString, type ResponseDecoder } from "../protocol";
 import { TimeoutError, withTimeout } from "../with-timeout";
 import type { AgentMemories } from "./agent-memories";
@@ -55,6 +56,7 @@ import type { ContextCompaction } from "./context-compaction";
 import type { ConversationRuntime } from "./conversation-runtime";
 import { agentNamesById } from "./delivery-content";
 import {
+  type DeveloperInstructionOptions,
   developerInstructions,
   memoryContext,
   type SectionTeammates,
@@ -104,9 +106,10 @@ const logger = createOpenBotLogger("thread-lifecycle");
  * session with a handoff. Such a session defers the tools from its next new session.
  * Version 9 adds `image_gen` to those namespaces. Version 10 gives a stdio server its working
  * directory as `cwd`; before, Codex did not get such a server, and refreshes the instructions that
- * allow requested desktop browser access, and 11 adds the background agent-seat instructions.
+ * allow requested desktop browser access, 11 adds the background agent-seat instructions, and 12
+ * selects the Hypruse instructions.
  */
-const CODEX_MCP_ADAPTER_VERSION = 11;
+const CODEX_MCP_ADAPTER_VERSION = 12;
 
 /** What a provider other than Codex, or a Codex with no file to read, has in its own files. */
 const NO_CODEX_OWN_SERVERS: CodexOwnServers = { disabled: {}, transports: {}, read: null };
@@ -1295,7 +1298,8 @@ export class ThreadLifecycle {
     instructionsFile: InstructionsFileInPrompt,
   ): DynamicRecord {
     const memories = this.#memories.essentialFor(agent.id);
-    const options = {
+    const options: DeveloperInstructionOptions = {
+      computerUseBackend: personalHypruseEnabled(this.#agentMcpServers(agent)) ? "hypruse" : "cua",
       computerUseInOwnChat,
       sideThread,
       passwordVault: this.#passwordVaultConnected(),

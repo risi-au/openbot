@@ -197,6 +197,7 @@ export interface AttentionRegistryOptions {
    * the limit the user chose, so Full access does not answer it.
    */
   workspaceSandboxed?(agentId: string): boolean;
+  computerUseEnabled?(agentId: string): boolean;
   /**
    * Whether this thread answers a Slack, Discord or Telegram conversation. Nobody there can answer a
    * question card, and the turn would wait for one with no limit while every other conversation of
@@ -241,6 +242,7 @@ export class AttentionRegistry {
   readonly #routines: RoutineAttention;
   readonly #approvalAutomation: ApprovalAutomationPolicy;
   readonly #workspaceSandboxed: (agentId: string) => boolean;
+  readonly #computerUseEnabled: (agentId: string) => boolean;
   readonly #messagingThread: (threadId: string) => boolean;
   readonly #emit: (event: AgentEvent) => void;
   readonly #emitError: (code: string, error: unknown, agentId?: string) => void;
@@ -257,6 +259,7 @@ export class AttentionRegistry {
     this.#routines = options.routines;
     this.#approvalAutomation = options.approvalAutomation ?? NO_APPROVAL_AUTOMATION;
     this.#workspaceSandboxed = options.workspaceSandboxed ?? (() => false);
+    this.#computerUseEnabled = options.computerUseEnabled ?? (() => false);
     this.#messagingThread = options.messagingThread ?? (() => false);
     this.#emit = options.emit;
     this.#emitError = options.emitError;
@@ -962,12 +965,16 @@ export class AttentionRegistry {
    * saved: "Always allow" stays the user's choice in the card, and Codex keeps it per server and tool.
    *
    * Only the consent that Codex marks gets this. A form, a hand-off, a sign-in and any request that
-   * OpenBot does not know still reach the user. A Workspace only agent and Computer Use keep their
-   * card: the first asks to go outside the limit the user chose, and the second has its own switch.
+   * OpenBot does not know still reach the user. Workspace only agents keep their card. The personal
+   * fork includes Computer Use in the agent's explicit Full access and automatic approval grant.
    */
   #answerMcpToolConsentWithoutAsking(client: AgentClient, request: AppServerRequest, agentId: string): boolean {
     if (!mcpToolCallConsent(request.params)) return false;
-    if (getString(request.params, "serverName") === COMPUTER_USE_MCP_SERVER_NAME) return false;
+    if (
+      getString(request.params, "serverName") === COMPUTER_USE_MCP_SERVER_NAME &&
+      (process.env.OPENBOT_PERSONAL_MODE !== "1" || !this.#computerUseEnabled(agentId))
+    )
+      return false;
     if (!this.#answersForAgent(agentId)) return false;
     client.respond(request.id, { action: "accept", content: {}, _meta: null });
     return true;

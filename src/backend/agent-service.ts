@@ -107,6 +107,7 @@ import {
   type AgentModelChoice,
   agentAutomationAllowed,
   agentBrowserProfile,
+  agentComputerUseEnabled,
   agentNewChatAllowed,
   agentTaskLimit,
   type BusyMessageMode,
@@ -822,6 +823,10 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
       workspaceSandboxed: (agentId) => {
         const agent = store.list().find((candidate) => candidate.id === agentId);
         return agent !== undefined && workspaceAccessEnforced(agent);
+      },
+      computerUseEnabled: (agentId) => {
+        const agent = store.list().find((candidate) => candidate.id === agentId);
+        return agent !== undefined && agentComputerUseEnabled(agent);
       },
       messagingThread: (threadId) => this.messaging.store.linkForThread(threadId) !== null,
       emit: (event) => this.#emit(event),

@@ -83,9 +83,9 @@ const logger = createOpenBotLogger("thread-lifecycle");
  * is the MCP namespaces in `features.code_mode.direct_only_tool_namespaces`: Codex 0.164 does not
  * add them on resume to a thread started without them, so a code-mode-only model saw no MCP tools.
  * Version 9 adds `image_gen` to those namespaces. Version 10 refreshes the instructions that allow
- * requested desktop browser access.
+ * requested desktop browser access, and 11 adds the background agent-seat instructions.
  */
-const CODEX_MCP_ADAPTER_VERSION = 10;
+const CODEX_MCP_ADAPTER_VERSION = 11;
 
 /** What a provider other than Codex, or a Codex with no file to read, has in its own files. */
 const NO_CODEX_OWN_SERVERS: CodexOwnServers = { disabled: {}, transports: {} };

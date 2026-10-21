@@ -17,21 +17,27 @@ environment = os.environ | {
 cli = profile / "provider-runtimes/codex/linux-x64/0.163.0/bin/codex"
 process = subprocess.Popen([str(cli), "app-server", "--listen", "stdio://"], env=environment,
                            stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
-                           text=True, bufsize=1)
+                           bufsize=0)
 selector = selectors.DefaultSelector()
 selector.register(process.stdout, selectors.EVENT_READ)
+buffer = bytearray()
 
 
 def request(identifier, method, params):
-    process.stdin.write(json.dumps({"id": identifier, "method": method, "params": params}) + "\n")
+    process.stdin.write((json.dumps({"id": identifier, "method": method, "params": params}) + "\n").encode())
     process.stdin.flush()
     deadline = time.monotonic() + 15
     while time.monotonic() < deadline:
-        if not selector.select(1):
+        if b"\n" not in buffer:
+            if not selector.select(1):
+                continue
+            chunk = os.read(process.stdout.fileno(), 65536)
+            if not chunk:
+                break
+            buffer.extend(chunk)
             continue
-        line = process.stdout.readline()
-        if not line:
-            break
+        line, _, rest = buffer.partition(b"\n")
+        buffer[:] = rest
         message = json.loads(line)
         if message.get("id") == identifier:
             assert "error" not in message, f"{method} failed."

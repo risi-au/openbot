@@ -1,0 +1,12 @@
+ts	phase	decision	why	evidence	result
+2026-10-21T01:56:00Z	frame	Use a separate profile and copied workspaces	Keep original chats recoverable while testing	TASKS.md	open
+2026-10-21T02:02:51Z	import	Copied 3 agents and 462 messages through SQLite backup	The original app can remain running	.openbot/personal-backups/original-20261021T020251Z/import-report.json	integrity ok
+2026-10-21T02:10:00Z	isolation	Disabled personal and bundled skills and saved-memory access	A private CODEX_HOME alone does not exclude every skill source	scripts/personal-provider-e2e.py	zero enabled skills and no external MCP or plugins
+2026-10-21T02:12:00Z	runtime	Changed runtime lookup and provider working directory to the private profile	The first installed launch fell back to host CLI shims	src/main/application-services.ts	fixed before final package
+2026-10-21T02:15:00Z	cutover	Retired old native sessions and paused the copied routine	Avoid duplicate scheduled work while the original app is active	scripts/personal-cutover.ts	chat text preserved
+2026-10-21T02:17:00Z	verification	Ran a real Codex chat through AgentService and SQLite	A visible workspace alone does not prove agent replies work	.openbot-build/personal-chat-e2e/report.json	passed
+2026-10-21T02:18:00Z	data	Compared imported message IDs and text with the original snapshot	Verify preservation after startup recovery	.openbot/personal-backups/original-20261021T020251Z/openbot.db	no missing messages or changed text
+2026-10-21T02:19:00Z	review	Kept independent review unverified	This session has no delegate_task capability	TASKS.md	BLOCKED independent review
+2026-10-21T02:21:00Z	correction	Moved the retained snapshot to the main checkout	A task worktree must not own the only recovery copy	/home/rishi/Work/working-projects/openbot/.openbot/personal-backups/original-20261021T020251Z/import-report.json	supersedes relative backup pointers above
+2026-10-21T02:23:00Z	ui	Fixed the local conversation reader identity	Desktop chat reads still requested a cloud identity after local access was enabled	src/main/host-service.ts	pending installed UI recheck
+2026-10-21T02:24:21Z	ui	Verified installed startup and an existing chat through cu	The real desktop must load the retained conversation	scripts/personal-installed-e2e.py	3 agents visible and local chat operations succeed

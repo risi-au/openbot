@@ -1,3 +1,4 @@
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { parseInviteUrl, selfHostedApiOrigin } from "@openbot/contracts/invite-links";
 import {
@@ -90,7 +91,6 @@ import { storageIpcHandlers } from "./ipc/storage-handlers";
 import { teamIpcHandlers } from "./ipc/team-handlers";
 import { updateIpcHandlers } from "./ipc/update-handlers";
 import { voiceIpcHandlers } from "./ipc/voice-handlers";
-import { installLinuxDesktopEntry } from "./linux-desktop-entry";
 import { configureLinuxGpu } from "./linux-gpu-mode";
 import { MacHapticFeedback } from "./mac-haptic-feedback";
 import {
@@ -101,6 +101,7 @@ import {
 } from "./main-window";
 import { ensureMacApplicationPresence, secondLaunchResponse } from "./main-window-state";
 import { MessageLinkRelay, openHttpLink } from "./message-link-relay";
+import { personalCodexConfig, personalEnvironment } from "./personal-environment";
 import { watchRemoteHostDirectory } from "./remote-server-host-directory";
 import { createRendererForwarders } from "./renderer-forwarders";
 import { sendToRenderer } from "./renderer-ipc";
@@ -175,10 +176,26 @@ if (commandLineUserDataDirectory) {
       ),
     ),
   );
+} else {
+  app.setPath("userData", join(app.getPath("appData"), "OpenBot Personal"));
 }
-app.setName("OpenBot");
+const providerEnvironment = personalEnvironment(app.getPath("userData"));
+for (const [key, value] of Object.entries(providerEnvironment)) {
+  if (value === undefined) delete process.env[key];
+  else process.env[key] = value;
+}
+mkdirSync(join(app.getPath("userData"), "home"), { recursive: true, mode: 0o700 });
+if (app.isPackaged) process.chdir(join(app.getPath("userData"), "home"));
+const personalCodexDirectory = join(app.getPath("userData"), "home/.codex");
+mkdirSync(personalCodexDirectory, { recursive: true, mode: 0o700 });
+const personalConfigPath = join(personalCodexDirectory, "config.toml");
+const personalConfig = existsSync(personalConfigPath) ? readFileSync(personalConfigPath, "utf8") : "";
+if (!personalConfig.includes("# OpenBot Personal defaults")) {
+  writeFileSync(personalConfigPath, personalConfig + personalCodexConfig(app.getPath("userData")), { mode: 0o600 });
+}
+app.setName("OpenBot Personal");
 app.enableSandbox();
-if (process.platform === "win32") app.setAppUserModelId("app.openbot.desktop");
+if (process.platform === "win32") app.setAppUserModelId("au.risi.openbot.personal");
 const hasSingleInstanceLock = app.requestSingleInstanceLock();
 // Linux: the GPU stays on until it fails on this computer (#992). `userData` has its final path here.
 configureLinuxGpu({
@@ -939,24 +956,7 @@ if (!hasSingleInstanceLock) {
         (policy) => app.setActivationPolicy(policy),
         () => app.dock?.show() ?? Promise.resolve(),
       );
-      // Linux registers the scheme through xdg-settings, which can only name a desktop entry that
-      // exists, so an AppImage writes its own first. On Windows the NSIS installer writes the scheme
-      // (`build/installer.nsh`), and each start writes it again for installs from before that script.
-      // A Windows development build does not register: the handler would be bare `electron.exe`.
-      // A macOS development build does not register either: macOS ignores the path and arguments and
-      // names the `com.github.Electron` bundle, so the link took `openbot://` from an installed
-      // OpenBot and opened some worktree's bare Electron.app. `bun run dev:slack` has a loopback return.
-      await Effect.runPromise(
-        installLinuxDesktopEntry({ platform: process.platform, environment: process.env, iconPath: appIconPath }),
-      );
-      if (
-        process.platform === "linux" ||
-        ((process.platform === "darwin" || process.platform === "win32") && app.isPackaged)
-      ) {
-        if (!app.setAsDefaultProtocolClient("openbot")) {
-          logger.warn("Unable to register the openbot:// scheme. Invitation links will not open OpenBot.");
-        }
-      }
+      // The personal fork must not replace the upstream app's launcher or protocol handler.
       if (process.platform === "darwin") app.dock?.setIcon(appIconPath);
       configureContentSecurityPolicy();
       configureRendererPermissions();

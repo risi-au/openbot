@@ -43,7 +43,7 @@ import { serversPort } from "./servers-port";
 const ServerScope = createSimpleContext({
   name: "Server scope",
   init: () => {
-    const { centralAuth } = useAuth();
+    const { signedInAccount } = useAuth();
     const { setupState } = useSetup();
     const { servers, activeServerId, initialServersReady, serverLoadRequest, serversLoaded } = useServers();
     const { pendingAgentSelection, setPendingAgentSelection } = useServerSwitch();
@@ -229,11 +229,7 @@ const ServerScope = createSimpleContext({
 
     onSettled(() => {
       const handleGlobalSearchShortcut = (event: KeyboardEvent) => {
-        if (
-          !isGlobalSearchShortcut(event) ||
-          centralAuth().status !== "signed_in" ||
-          setupState()?.completed !== true
-        ) {
+        if (!isGlobalSearchShortcut(event) || !signedInAccount() || setupState()?.completed !== true) {
           return;
         }
         event.preventDefault();

@@ -15,6 +15,7 @@ import { Deferred, Effect, Schema } from "effect";
 import { runInLoginShell } from "./cli";
 import { causeHelpers } from "./effect-boundary";
 import type { McpOperationError } from "./mcp-effects";
+import { HYPRUSE_MCP_SERVER_NAME, personalHypruseEnabled } from "./personal-computer-use";
 import { getRecord } from "./protocol";
 
 const execFileAsync = promisify(execFile);
@@ -162,6 +163,11 @@ function unusableDrop(server: UnusableMcpServer): McpServerDrop {
  * it off for that agent.
  */
 export function agentMcpServers(configs: readonly McpServerConfig[], computerUse: boolean): readonly McpServerConfig[] {
+  if (personalHypruseEnabled(configs)) {
+    return configs.filter(
+      (config) => config.id !== COMPUTER_USE_MCP_SERVER_ID && (computerUse || config.name !== HYPRUSE_MCP_SERVER_NAME),
+    );
+  }
   return computerUse ? configs : configs.filter((config) => config.id !== COMPUTER_USE_MCP_SERVER_ID);
 }
 

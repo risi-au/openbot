@@ -1,12 +1,14 @@
 import assert from "node:assert/strict";
 import { mkdir, mkdtemp, readFile, writeFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
+import { COMPUTER_USE_MCP_SERVER_ID, type McpServerConfig } from "@openbot/contracts/ipc";
 import { developerInstructions, memoryContext } from "../src/backend/agent/developer-instructions";
 import { DISABLED_MEMORY_TOOLS } from "../src/backend/agent/memory-tool-inputs";
 import { BUILTIN_TOOL_CATALOG, VISIBLE_TOOL_DEFINITIONS } from "../src/backend/agent/tool-catalog";
 import { toolGuidance } from "../src/backend/agent/tool-guidance";
 import { AgentStore } from "../src/backend/agent-store";
 import { runCauseEffect } from "../src/backend/effect-boundary";
+import { agentMcpServers } from "../src/backend/mcp-provider-shapes";
 import { CentralAuthManager } from "../src/main/central-auth-manager";
 import { ManagedSkillService } from "../src/main/managed-skill-service";
 import { personalCodexConfig, personalEnvironment } from "../src/main/personal-environment";
@@ -63,6 +65,31 @@ try {
   assert.ok(!instructions.includes("Use only openbot_browser"));
   assert.ok(instructions.includes("CUA's separate agent seat and cursor"));
   assert.ok(instructions.includes("Do not use foreground delivery"));
+  const hypruse = developerInstructions(agent, store.sharedRoot, [], root, { computerUseBackend: "hypruse" });
+  assert.ok(hypruse.includes("Use the hypruse MCP connection"));
+  assert.ok(hypruse.includes("Never click_ui a text field"));
+  assert.ok(!hypruse.includes("CUA's separate agent seat"));
+  assert.ok(!hypruse.includes("skill://cua-driver"));
+  const config: McpServerConfig = {
+    id: "trial",
+    name: "hypruse",
+    transport: "stdio",
+    enabled: true,
+    command: "/bin/test",
+    args: [],
+    env: [],
+    envPassthrough: [],
+    workingDirectory: "",
+    url: "",
+    headers: [],
+  };
+  const cua = { ...config, id: COMPUTER_USE_MCP_SERVER_ID, name: "computer_use" };
+  assert.deepEqual(agentMcpServers([config, cua], true), [config]);
+  assert.deepEqual(agentMcpServers([config, cua], false), []);
+  assert.deepEqual(agentMcpServers([cua], true), [cua]);
+  process.env.OPENBOT_PERSONAL_MODE = "0";
+  assert.deepEqual(agentMcpServers([config, cua], true), [config, cua]);
+  process.env.OPENBOT_PERSONAL_MODE = "1";
   const guidance = toolGuidance("openbot_browser", "snapshot", agent);
   assert.ok(guidance.includes("do not substitute the embedded browser"));
   assert.ok(!guidance.includes("For every browser task"));

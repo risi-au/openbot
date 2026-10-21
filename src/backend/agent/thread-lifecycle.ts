@@ -38,6 +38,7 @@ import {
   toMcpShapeFailed,
   usableMcpServers,
 } from "../mcp-provider-shapes";
+import { personalHypruseEnabled } from "../personal-computer-use";
 import { decodeRecordResponse, decodeThreadResponse, getString, type ResponseDecoder } from "../protocol";
 import { TimeoutError, withTimeout } from "../with-timeout";
 import type { AgentMemories } from "./agent-memories";
@@ -45,7 +46,12 @@ import { readCodexMcpConfig } from "./codex-mcp-config";
 import type { ContextCompaction } from "./context-compaction";
 import type { ConversationRuntime } from "./conversation-runtime";
 import { agentNamesById } from "./delivery-content";
-import { developerInstructions, memoryContext, type SectionTeammates } from "./developer-instructions";
+import {
+  type DeveloperInstructionOptions,
+  developerInstructions,
+  memoryContext,
+  type SectionTeammates,
+} from "./developer-instructions";
 import { readHandoffHistory, renderProviderHandoff } from "./handoff-history";
 import { decodeCapturedSteps, readCapturedSteps } from "./handoff-tool-steps";
 import { sessionSettingsIdentity } from "./session-settings";
@@ -64,9 +70,9 @@ const logger = createOpenBotLogger("thread-lifecycle");
  * the managed tool runtimes joining the fingerprint, so a session started before Bun finished
  * downloading is replaced once its servers can actually start, 5 is the plan tool below, and 6 is
  * server names in the form Codex accepts. Version 7 keeps approvals for custom MCP servers.
- * Version 8 refreshes desktop browser instructions; 9 adds background agent-seat instructions.
+ * Version 8 refreshes desktop browser instructions; 9 adds agent seats; 10 selects Hypruse instructions.
  */
-const CODEX_MCP_ADAPTER_VERSION = 9;
+const CODEX_MCP_ADAPTER_VERSION = 10;
 
 /**
  * Codex offers `update_plan` only when this is on, and without it a turn sends no
@@ -804,7 +810,8 @@ export class ThreadLifecycle {
     computerUseInOwnChat = false,
   ): DynamicRecord {
     const memories = this.#memories.essentialFor(agent.id);
-    const options = {
+    const options: DeveloperInstructionOptions = {
+      computerUseBackend: personalHypruseEnabled(this.#agentMcpServers(agent)) ? "hypruse" : "cua",
       computerUseInOwnChat,
       passwordVault: this.#passwordVaultConnected(),
       memoryLimit: this.#memories.limit(),

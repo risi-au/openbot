@@ -42,6 +42,7 @@ import type { PreparedBrowserSecret } from "../browser-host";
 import { parseBrowserToolCall } from "../browser-tools";
 import { causeHelpers } from "../effect-boundary";
 import type { PasswordVault } from "../password-vault";
+import { HYPRUSE_MCP_SERVER_NAME } from "../personal-computer-use";
 import {
   type AppServerRequest,
   type DynamicToolCallParams,
@@ -971,7 +972,9 @@ export class AttentionRegistry {
   #answerMcpToolConsentWithoutAsking(client: AgentClient, request: AppServerRequest, agentId: string): boolean {
     if (!mcpToolCallConsent(request.params)) return false;
     if (
-      getString(request.params, "serverName") === COMPUTER_USE_MCP_SERVER_NAME &&
+      (getString(request.params, "serverName") === COMPUTER_USE_MCP_SERVER_NAME ||
+        (process.env.OPENBOT_PERSONAL_MODE === "1" &&
+          getString(request.params, "serverName") === HYPRUSE_MCP_SERVER_NAME)) &&
       (process.env.OPENBOT_PERSONAL_MODE !== "1" || !this.#computerUseEnabled(agentId))
     )
       return false;

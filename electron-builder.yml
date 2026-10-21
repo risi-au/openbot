@@ -35,6 +35,9 @@ asarUnpack:
   # The unpacked host resolves Effect without loading any application module from asar.
   - node_modules/effect/**/*
 extraResources:
+  - from: resources/hypruse
+    to: hypruse
+    filter: ["**/*.py"]
   - from: resources/managed-skills
     to: managed-skills
   - from: resources/plugin-catalog

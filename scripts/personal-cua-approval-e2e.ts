@@ -54,7 +54,7 @@ try {
   const threadId = store.ensureThreadIdNow(agent.id);
   conversation.bindThread(threadId, agent.id, threadId);
   let requestId = 0;
-  function request(marked = true) {
+  function request(marked = true, serverName = COMPUTER_USE_MCP_SERVER_NAME) {
     const id = ++requestId;
     attention.surfaceMcpElicitation(client, {
       id,
@@ -62,7 +62,7 @@ try {
       params: {
         threadId,
         turnId: `turn-${id}`,
-        serverName: COMPUTER_USE_MCP_SERVER_NAME,
+        serverName,
         mode: "form",
         message: "Allow this desktop tool?",
         requestedSchema: { type: "object", properties: {} },
@@ -78,6 +78,8 @@ try {
   for (let i = 0; i < 3; i++) request();
   assert.equal(client.replies.length, 3);
   assert.equal(events.filter((event) => event.type === "prompt").length, 1);
+  request(true, "hypruse");
+  assert.equal(client.replies.length, 4);
   autoApprove = false;
   request();
   autoApprove = true;
@@ -86,13 +88,14 @@ try {
   sandboxed = false;
   computerUse = false;
   request();
+  request(true, "hypruse");
   computerUse = true;
   request(false);
-  assert.equal(client.replies.length, 3);
-  assert.equal(events.filter((event) => event.type === "prompt").length, 5);
+  assert.equal(client.replies.length, 4);
+  assert.equal(events.filter((event) => event.type === "prompt").length, 6);
   await writeFile(
     join(out, "report.json"),
-    `${JSON.stringify({ passed: true, approvedDesktopCalls: 3, preservedPromptCases: ["standard mode", "Ask first", "Workspace only", "Computer Use off", "plugin question"] }, null, 2)}\n`,
+    `${JSON.stringify({ passed: true, approvedDesktopCalls: 4, preservedPromptCases: ["standard mode", "Ask first", "Workspace only", "CUA off", "Hypruse off", "plugin question"] }, null, 2)}\n`,
   );
   process.stdout.write(`PASS ${join(out, "report.json")}\n`);
 } finally {

@@ -55,6 +55,8 @@ export interface DeveloperInstructionOptions {
   homeSkills?: readonly HomeSkill[];
   /** OpenBot runs on a server, so its browser has a data-center address. Fixed for the process. */
   serverHost?: boolean;
+  /** The desktop tools the agent's sessions use. */
+  computerUseBackend?: "cua" | "hypruse";
 }
 
 /** When and how to use the OpenBot Vault. Its settings page is on the user's own computer only. */
@@ -213,6 +215,10 @@ export function developerInstructions(
   agentDefaults: AgentDefaults,
   options: DeveloperInstructionOptions = {},
 ): string {
+  const hypruse =
+    process.env.OPENBOT_PERSONAL_MODE === "1" &&
+    agentComputerUseEnabled(agent) &&
+    options.computerUseBackend === "hypruse";
   const profile = tagSafe(
     JSON.stringify(
       {
@@ -287,7 +293,7 @@ export function developerInstructions(
           "This conversation is a side thread. Your other threads can work in the same working directory at the same time and change the same files. Read a file again just before you change it. Do not run git commands that change the branch, the index, or the history, such as checkout, switch, reset, stash, rebase, or commit, unless the user asks for it in this thread.",
         ]
       : []),
-    ...(process.env.OPENBOT_PERSONAL_MODE === "1" && agentComputerUseEnabled(agent)
+    ...(process.env.OPENBOT_PERSONAL_MODE === "1" && agentComputerUseEnabled(agent) && !hypruse
       ? [
           "Use Computer Use in background delivery with CUA's separate agent seat and cursor. Keep agent applications on their dedicated workspace. Leave the user's pointer, keyboard focus, and current workspace unchanged. A user task authorizes its ordinary background clicks and typing; do not ask permission for every action. Do not use foreground delivery, bring_to_front, global input commands, or switch the user's workspace as a fallback. If the agent seat refuses an application, try its semantic accessibility actions in the background. If those also fail, report the exact refusal and stop that action. Never repeat text after a partially delivered input without reading the target first. Physical mouse or keyboard takeover requires a new explicit user instruction for that task.",
           "On Hyprland, launch new agent applications with hl.dsp.exec_cmd through hyprctl dispatch, using the Lua window rules workspace = '29 silent', no_initial_focus = true, and focus_on_activate = false. Do not use the obsolete bracketed exec-rule syntax. Existing user windows remain where they are; use background actions without moving or focusing them. A workspace does not replace the separate CUA input seat.",
@@ -295,11 +301,13 @@ export function developerInstructions(
         ]
       : []),
     ...homeSkillInstructions(options.homeSkills ?? []),
-    agentComputerUseEnabled(agent)
+    agentComputerUseEnabled(agent) && !hypruse
       ? `Use ${COMPUTER_USE_MCP_SERVER_NAME} for every GUI task outside the embedded browser, including the user's Chrome, Chromium, and other Linux/Omarchy applications when the user requests them. Use the requested existing browser window and its signed-in session. Do not copy browser profiles or credentials, enable remote debugging, or change browser settings to obtain access. Never use Codex Computer Use, the Sky computer use service, or another desktop-control plugin: they show no OpenBot cursor and can fight this one for the pointer. After each action, read its structuredContent, or its JSON copy at the end of the result text: refused or suspected_noop means that the action did not happen, so do not report it as done; unverifiable means read the window again and report what you saw; a delivery.mode of foreground took the screen from the user. Select a window by its title and size, never the first match: most windows are small empty helpers. Pixel coordinates apply only to the main display; on another display, use the element token, or the element_index with the window_id and snapshot_id of the same read. Take the shortest path and do not repeat reads; use query or include_screenshot false when you only need an element. Read skill://cua-driver/SKILL.md before the first GUI action of a conversation.`
-      : options.computerUseInOwnChat
-        ? "This conversation runs next to your own chat, and only your own chat uses Computer Use. Here, do not control desktop applications outside the embedded browser or use another desktop-control plugin; when the task needs one, say so, so that the user can continue that step in your own chat."
-        : "The user turned Computer Use off for you. Do not control desktop applications outside the embedded browser or use a desktop-control plugin. Delegate such work to a teammate with Computer Use on (openbot.read_agent shows it); when none has it, say that the user can turn it on in your settings.",
+      : hypruse
+        ? "Use the hypruse MCP connection for desktop tasks in background mode. The computer_use CUA server is not selected. Keep background=true and use native Wayland windows on the agent's hidden workspaces. Use desktop to identify the exact window, keyboard with window= for text and keys, and click_ui only for buttons or other actionable controls. Never click_ui a text field or request accessibility focus; that route can activate the window and is blocked by the OpenBot launcher. A window with exactly one editable field can receive keyboard text directly. Verify the actual field, button effect, or terminal output after each action. If a call refuses, reports partial input, or changes the human's focus/workspace, stop and report it without retrying or falling back. Never use pointer actions, foreground delivery, focus/workspace switches, or CUA/global-input helpers. Launch new apps through hypruse launch on its own workspaces. Do not move existing user windows or launch a new window through an already-running user browser. Run terminal commands directly through your provider shell tools; typing into a terminal window is needed only when the user specifically asks. For web work use the embedded browser, or the agent_chrome MCP connection when available and the user requests the agents' Chrome. agent_chrome targets the agents' existing Chrome session through CDP and leaves the physical pointer alone; never change or attach to the user's Chrome debugging settings. Do not import shared skills, plugins, or memories. A task authorizes its ordinary background steps; do not ask for permission per click. App-triggered activation is still possible, so background mode is not an OS sandbox."
+        : options.computerUseInOwnChat
+          ? "This conversation runs next to your own chat, and only your own chat uses Computer Use. Here, do not control desktop applications outside the embedded browser or use another desktop-control plugin; when the task needs one, say so, so that the user can continue that step in your own chat."
+          : "The user turned Computer Use off for you. Do not control desktop applications outside the embedded browser or use a desktop-control plugin. Delegate such work to a teammate with Computer Use on (openbot.read_agent shows it); when none has it, say that the user can turn it on in your settings.",
     ...(agentAutomationAllowed(agent, agentDefaults) ? [automationInstructions(agent.id, automationRoot)] : []),
     ...(agentQuickAcknowledgementEnabled(agent, agentDefaults)
       ? [

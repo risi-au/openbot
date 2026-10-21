@@ -36,6 +36,7 @@ const browser: AgentBrowserHost = {
   onChanged: () => () => {},
   onControlChanged: () => () => {},
   onDocumentChanged: () => () => {},
+  clearAgentSession: () => Effect.void,
   clearControls: () => {},
   endControl: () => {},
   close: () => Effect.void,

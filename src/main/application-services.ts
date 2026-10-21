@@ -25,6 +25,7 @@ import { spawnAgentDatabaseHost } from "./agent-database-host-process";
 import { agentDisplayEnvironment, hasSeparateAgentDisplay } from "./agent-display";
 import { type AgentHostSettingsService, createAgentHostSettings } from "./agent-host-settings";
 import { type BrowserProfileService, createBrowserProfileService } from "./browser-profile-service";
+import { openExternal } from "./external-browser";
 import { HostReleaseService, readInstallationMode } from "./host-release-service";
 import {
   CONTAINER_UPDATE_PATHS,
@@ -878,7 +879,7 @@ export async function createApplicationServices({
   const externalLinks = new ExternalLinkOpener({
     preference: externalLinkPreference,
     platform: process.platform,
-    openDefault: (url) => shell.openExternal(url),
+    openDefault: (url) => openExternal(url),
     // The user clicked the link in the focused window, which can be a chat window.
     onFallback: (fallback) =>
       sendToRenderer(
@@ -2434,7 +2435,7 @@ export async function createApplicationServices({
         try: async () => {
           if (action === "reveal") shell.showItemInFolder(appPath);
           else {
-            await shell.openExternal(MAC_PERMISSION_URLS[action]);
+            await openExternal(MAC_PERMISSION_URLS[action]);
             await computerUsePermissionHelp.show(action, appPath);
           }
         },

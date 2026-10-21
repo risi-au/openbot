@@ -289,7 +289,10 @@ const Auth = createSimpleContext({
 
     const signedInAccount = createMemo(() => {
       const state = centralAuth();
-      return state.status === "signed_in" ? state.user : null;
+      // A local workspace identity grants no account token or remote authorization.
+      return state.status === "signed_in"
+        ? state.user
+        : { id: "local-desktop", email: "local@localhost", name: "Local", avatarUrl: null };
     });
     /** Null while the success animation holds, so the workspace mounts after it. */
     const visibleSignedInAccount = createMemo(() => (authSuccessVisible() ? null : signedInAccount()));

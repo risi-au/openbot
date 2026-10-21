@@ -250,7 +250,7 @@ import { PROVIDER_DETECTION_SETTINGS_FILE, ProviderDetectionSettingsStore } from
 import { ProviderHostSignIns } from "./provider-host-sign-ins";
 import { startAccountLog, startAgentLog, startProviderLog } from "./provider-log";
 import { toProviderRuntimeFailure } from "./provider-runtime-effects";
-import { ProviderRuntimeManager, providerRuntimeRoot, runtimeTarget } from "./provider-runtime-manager";
+import { ProviderRuntimeManager, runtimeTarget } from "./provider-runtime-manager";
 import { ProviderUseSettingsStore } from "./provider-use-settings-store";
 import { RelayedMessagingInstalls } from "./relayed-messaging-installs";
 import { decodeQueuedMessageReceipt } from "./remote-agent-decoding";
@@ -925,6 +925,7 @@ export async function createApplicationServices({
     app.isPackaged ? "https://api.openbot.run" : "http://127.0.0.1:3100",
   );
   const centralAuth = new CentralAuthManager({
+    localOnly: true,
     apiUrl: centralAuthApiUrl,
     mobileConnectApiUrl: readMobileConnectApiUrl(process.env.OPENBOT_MOBILE_AUTH_API_URL, centralAuthApiUrl),
     storagePath: join(app.getPath("userData"), CENTRAL_AUTH_FILE),
@@ -1212,16 +1213,6 @@ export async function createApplicationServices({
     ),
     knownAgentIds: () => store.list().map((agent) => agent.id),
   });
-  /*
-   * The installed CLIs are the computer's, the partial downloads are this profile's.
-   *
-   * Development gives every renderer port and every `--isolated` worktree a `userData` of its own,
-   * so a store kept there started empty each time: OpenBot fell back to the user's own CLI, offered
-   * the pinned version against it, and downloaded 144 MB again for a profile that would be replaced
-   * by the next port. The packaged app's `userData` is `appData/OpenBot` already, so the shared
-   * store is the path it always used. The switch is read here rather than imported from the entry
-   * point, which this file may not reach into; both readers read the same immutable value.
-   */
   const providerUse = new ProviderUseSettingsStore(join(app.getPath("userData"), "openbot-provider-use-v1.json"));
   await runCauseEffect(providerUse.load());
   const providerAccounts = new ProviderAccountStore(
@@ -1235,10 +1226,7 @@ export async function createApplicationServices({
   await runCauseEffect(providerCliAppVersion.load());
   const providerRuntimes = new ProviderRuntimeManager({
     isProviderOn: (provider) => !providerUse.off().includes(provider),
-    root: providerRuntimeRoot({
-      appData: app.getPath("appData"),
-      userDataOverride: app.commandLine.getSwitchValue("user-data-dir"),
-    }),
+    root: join(app.getPath("userData"), "provider-runtimes"),
     downloadRoot: join(app.getPath("userData"), "provider-runtimes", ".downloads"),
     updateRuntime: (runtime, install, signal, onWait) => {
       if (isManagedToolRuntime(runtime)) return install().pipe(Effect.asVoid);
@@ -2002,10 +1990,7 @@ export async function createApplicationServices({
         join(userData, "logs", "agents"),
         join(userData, "logs", "main"),
       ],
-      runtimes: providerRuntimeRoot({
-        appData: app.getPath("appData"),
-        userDataOverride: app.commandLine.getSwitchValue("user-data-dir"),
-      }),
+      runtimes: join(app.getPath("userData"), "provider-runtimes"),
       data: userData,
     },
     database: () => store.database.connection,
@@ -2773,6 +2758,7 @@ export async function createApplicationServices({
       (process.env.OPENBOT_HOSTED_SERVER === "1" || installationMode === "self") &&
       existsSync(HOSTED_UPDATE_TRIGGER));
   const updatesEnabled =
+    process.env.OPENBOT_PERSONAL_MODE !== "1" &&
     app.isPackaged &&
     !isNixStoreInstall() &&
     (hostedInstaller || (supportsInstalledUpdates(process.platform) && updateMetadataAvailable)) &&

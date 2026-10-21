@@ -89,6 +89,7 @@ export class CodexAppServerClient extends EventEmitter<ClientEvents> {
     const target = cliSpawnTarget(this.#executable, ["app-server", "--listen", "stdio://"]);
     const child = spawn(target.command, target.args, {
       stdio: ["pipe", "pipe", "pipe"],
+      cwd: process.env.OPENBOT_PERSONAL_MODE === "1" ? process.env.HOME : undefined,
       env: this.#extraEnv ? { ...process.env, ...this.#extraEnv } : process.env,
       windowsVerbatimArguments: target.windowsVerbatimArguments,
       windowsHide: true,

@@ -1655,6 +1655,7 @@ export class HostService extends EventEmitter<HostEvents> {
   }
 
   #currentAgentReaderId(): string {
+    if (process.env.OPENBOT_PERSONAL_MODE === "1") return SIGNED_OUT_CHANNEL_MEMBER_ID;
     const accountReaderId = `local-user:${this.#options.getSignedInUser().id}`;
     const memberId = this.#findCurrentMemberId();
     // Channel reads are keyed by the reader id this method answers, so they adopt with it.

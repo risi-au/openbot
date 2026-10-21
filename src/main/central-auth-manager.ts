@@ -78,6 +78,7 @@ interface CentralAuthManagerOptions {
   encrypt: (value: string) => Buffer;
   decrypt: (value: Buffer) => string;
   canPersist?: () => boolean;
+  localOnly?: boolean;
   fetch?: AuthFetcher;
   startupRetryWindowMs?: number;
   startupRequestTimeoutMs?: number;
@@ -186,6 +187,7 @@ export class CentralAuthManager extends EventEmitter<CentralAuthEvents> {
       ...options,
       mobileConnectApiUrl: options.mobileConnectApiUrl ?? options.apiUrl,
       canPersist: options.canPersist ?? (() => true),
+      localOnly: options.localOnly ?? false,
       fetch: fetcher,
       startupRetryWindowMs: options.startupRetryWindowMs ?? STARTUP_RETRY_WINDOW_MS,
       startupRequestTimeoutMs: options.startupRequestTimeoutMs ?? STARTUP_REQUEST_TIMEOUT_MS,
@@ -1348,6 +1350,7 @@ export class CentralAuthManager extends EventEmitter<CentralAuthEvents> {
     this: CentralAuthManager,
   ): Effect.fn.Return<CentralAuthState, CentralAuthOperationError, CentralAuthTransport> {
     this.#setState({ status: "loading" });
+    if (this.#options.localOnly) return this.#setState({ status: "signed_out" });
     // A session that cannot be read now stays on disk: a Keychain that is locked or asks for
     // permission at startup can open it at the next start, and the next sign-in replaces it.
     if (this.#options.canPersist()) {

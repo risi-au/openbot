@@ -4,17 +4,20 @@ import { BROWSER_DYNAMIC_TOOLS, OPENBOT_BROWSER_NAMESPACE } from "../browser-too
 import { OPENBOT_DYNAMIC_TOOLS, OPENBOT_TOOL_DEFINITIONS } from "../openbot-tools";
 import type { DynamicToolCallParams } from "../protocol";
 import { advertisedJsonSchema } from "./advertised-json-schema";
+import { DISABLED_MEMORY_TOOLS } from "./memory-tool-inputs";
 import { toolGuidance } from "./tool-guidance";
 
 /** Discovery changes visibility only. Original definitions and execution owners stay authoritative. */
 export const BUILTIN_TOOL_CATALOG = [OPENBOT_DYNAMIC_TOOLS, ...BROWSER_DYNAMIC_TOOLS].flatMap((namespace) =>
-  namespace.tools.map((tool) => ({
-    namespace: namespace.name,
-    tool: tool.name,
-    name: `${namespace.name}.${tool.name}`,
-    description: tool.description,
-    inputSchema: tool.inputSchema,
-  })),
+  namespace.tools
+    .filter((tool) => !DISABLED_MEMORY_TOOLS.has(tool.name))
+    .map((tool) => ({
+      namespace: namespace.name,
+      tool: tool.name,
+      name: `${namespace.name}.${tool.name}`,
+      description: tool.description,
+      inputSchema: tool.inputSchema,
+    })),
 );
 
 const DIRECT_NAMES = new Set([
@@ -52,7 +55,7 @@ const describeSchema = z.strictObject(describeShape);
 const callSchema = z.strictObject(callShape);
 
 export const VISIBLE_TOOL_DEFINITIONS = [
-  ...OPENBOT_TOOL_DEFINITIONS.filter((tool) => DIRECT_NAMES.has(tool.name)),
+  ...OPENBOT_TOOL_DEFINITIONS.filter((tool) => DIRECT_NAMES.has(tool.name) && !DISABLED_MEMORY_TOOLS.has(tool.name)),
   {
     name: "tool_search",
     description: `Find built-in tools by keywords or qualified name. Pass queries (an array) or query (one string). Returns names and short descriptions, default 5, maximum 10. The strongest matches also include inputSchema and guidance, ready for tool_call. Describe other results before first use. Catalog: ${INITIAL_TOOL_CATALOG}`,

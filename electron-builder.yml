@@ -1,10 +1,6 @@
-appId: app.openbot.desktop
-productName: OpenBot
+appId: au.risi.openbot.personal
+productName: OpenBot Personal
 copyright: Copyright © 2026 Synthetify Labs spółka z ograniczoną odpowiedzialnością
-protocols:
-  - name: OpenBot invitations
-    schemes:
-      - openbot
 asar: true
 artifactName: ${productName}-${version}-${arch}.${ext}
 electronUpdaterCompatibility: ">=2.16"
@@ -20,7 +16,7 @@ electronFuses:
   grantFileProtocolExtraPrivileges: false
 publish:
   provider: github
-  owner: nightly-labs
+  owner: risi-au
   repo: openbot
 files:
   - out/**/*
@@ -162,6 +158,7 @@ nsis:
   oneClick: false
   allowToChangeInstallationDirectory: true
 linux:
+  executableName: openbot-personal
   category: Development
   icon: build/icon-production.png
   synopsis: A local-first multi-agent desktop workspace.

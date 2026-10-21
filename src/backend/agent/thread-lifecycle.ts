@@ -104,9 +104,9 @@ const logger = createOpenBotLogger("thread-lifecycle");
  * session with a handoff. Such a session defers the tools from its next new session.
  * Version 9 adds `image_gen` to those namespaces. Version 10 gives a stdio server its working
  * directory as `cwd`; before, Codex did not get such a server, and refreshes the instructions that
- * allow requested desktop browser access.
+ * allow requested desktop browser access, and 11 adds the background agent-seat instructions.
  */
-const CODEX_MCP_ADAPTER_VERSION = 10;
+const CODEX_MCP_ADAPTER_VERSION = 11;
 
 /** What a provider other than Codex, or a Codex with no file to read, has in its own files. */
 const NO_CODEX_OWN_SERVERS: CodexOwnServers = { disabled: {}, transports: {}, read: null };

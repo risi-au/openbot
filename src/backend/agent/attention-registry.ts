@@ -14,7 +14,12 @@ import type {
   RespondToBrowserTakeoverInput,
   RespondToPromptInput,
 } from "@openbot/contracts/ipc";
-import { AGENT_RUNTIME_ATTENTION_LIMIT, BROWSER_TAKEOVER_REASONS, cardBrand } from "@openbot/contracts/ipc";
+import {
+  AGENT_RUNTIME_ATTENTION_LIMIT,
+  BROWSER_TAKEOVER_REASONS,
+  cardBrand,
+  COMPUTER_USE_MCP_SERVER_NAME,
+} from "@openbot/contracts/ipc";
 import { type DynamicRecord, isOneOf } from "@openbot/contracts/runtime-values";
 import {
   type ConversationUiBlock,
@@ -415,6 +420,7 @@ export interface AttentionRegistryOptions {
    * the limit the user chose, so Full access does not answer it.
    */
   workspaceSandboxed?(agentId: string): boolean;
+  computerUseEnabled?(agentId: string): boolean;
   /**
    * Whether this thread answers an external chat conversation (Slack, Discord, Telegram, WhatsApp). Nobody there can answer a
    * question card, and the turn would wait for one with no limit while every other conversation of
@@ -474,6 +480,7 @@ export class AttentionRegistry {
   readonly #routines: RoutineAttention;
   readonly #approvalAutomation: ApprovalAutomationPolicy;
   readonly #workspaceSandboxed: (agentId: string) => boolean;
+  readonly #computerUseEnabled: (agentId: string) => boolean;
   readonly #messagingThread: (threadId: string) => boolean;
   readonly #messagingRequestTurn: (agentId: string, turnId: string) => boolean;
   readonly #emit: (event: AgentEvent) => void;
@@ -496,6 +503,7 @@ export class AttentionRegistry {
     this.#routines = options.routines;
     this.#approvalAutomation = options.approvalAutomation ?? NO_APPROVAL_AUTOMATION;
     this.#workspaceSandboxed = options.workspaceSandboxed ?? (() => false);
+    this.#computerUseEnabled = options.computerUseEnabled ?? (() => false);
     this.#messagingThread = options.messagingThread ?? (() => false);
     this.#messagingRequestTurn = options.messagingRequestTurn ?? (() => false);
     this.#emit = options.emit;
@@ -1744,8 +1752,18 @@ export class AttentionRegistry {
   /**
    * Accepts Codex's consent to run one MCP tool, once, when the agent's grant covers it. Nothing is
    * saved: "Always allow" stays the user's choice in the card, and Codex keeps it per server and tool.
+   *
+   * Only the consent that Codex marks gets this. A form, a hand-off, a sign-in and any request that
+   * OpenBot does not know still reach the user. Workspace only agents keep their card. In personal
+   * mode, Computer Use keeps its own switch: an agent that has it off gets the card.
    */
   #answerMcpToolConsentWithoutAsking(client: AgentClient, request: AppServerRequest, agentId: string): boolean {
+    if (
+      process.env.OPENBOT_PERSONAL_MODE === "1" &&
+      getString(request.params, "serverName") === COMPUTER_USE_MCP_SERVER_NAME &&
+      !this.#computerUseEnabled(agentId)
+    )
+      return false;
     if (!this.#answersMcpToolConsent(request.params, agentId)) return false;
     client.respond(request.id, { action: "accept", content: {}, _meta: null });
     return true;

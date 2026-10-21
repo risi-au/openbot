@@ -61,6 +61,8 @@ try {
   assert.ok(instructions.includes("Do not redirect an explicit request for their browser"));
   assert.ok(instructions.includes("the user's Chrome, Chromium, and other Linux/Omarchy applications"));
   assert.ok(!instructions.includes("Use only openbot_browser"));
+  assert.ok(instructions.includes("CUA's separate agent seat and cursor"));
+  assert.ok(instructions.includes("Do not use foreground delivery"));
   const guidance = toolGuidance("openbot_browser", "snapshot", agent);
   assert.ok(guidance.includes("do not substitute the embedded browser"));
   assert.ok(!guidance.includes("For every browser task"));

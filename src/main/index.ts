@@ -58,6 +58,7 @@ import {
   shouldAutoStartHost,
 } from "./development-profile";
 import { stopStuckExitAfterLimit } from "./exit-watchdog";
+import { openExternal } from "./external-browser";
 import { filePreviewPages } from "./file-preview-pages";
 import { hostAllowsTenantLaunch } from "./host-update-coordinator";
 import { hostedDiskRestoreProbe, takeHostedServerEnvironment } from "./hosted-server-bootstrap";
@@ -846,7 +847,7 @@ function registerIpcHandlers({
     ...browserDockIpcHandlers({ browserDock }),
     ...computerUseIpcHandlers({
       cuaDriver,
-      openExternal: (url) => shell.openExternal(url),
+      openExternal: (url) => openExternal(url),
       permissionHelp: computerUsePermissionHelp,
     }),
     ...macAutomationIpcHandlers({ platform: process.platform }),
@@ -923,7 +924,7 @@ function registerIpcHandlers({
       notificationPreference,
       translate: language.translate,
       requestPermission: () => requestDesktopNotificationPermission(notificationPreference, language.translate),
-      openExternal: (url) => shell.openExternal(url),
+      openExternal: (url) => openExternal(url),
     }),
     ...teamIpcHandlers({
       host,

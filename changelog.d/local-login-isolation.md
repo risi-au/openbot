@@ -7,3 +7,5 @@
 ### Fixed
 
 - Local chat reads and read markers work without a cloud account. Existing agents, messages, and attachments can be imported into the separate profile.
+- Explicit requests for the user's browser or Linux desktop use OpenBot Computer Use when enabled. Embedded browser guidance no longer overrides that request.
+- External sign-in and connection links use the desktop's default browser and its normal profile while provider settings remain private.

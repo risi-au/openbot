@@ -1,9 +1,11 @@
 import assert from "node:assert/strict";
 import { mkdir, mkdtemp, readFile, writeFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
-import { memoryContext } from "../src/backend/agent/developer-instructions";
+import { developerInstructions, memoryContext } from "../src/backend/agent/developer-instructions";
 import { DISABLED_MEMORY_TOOLS } from "../src/backend/agent/memory-tool-inputs";
 import { BUILTIN_TOOL_CATALOG, VISIBLE_TOOL_DEFINITIONS } from "../src/backend/agent/tool-catalog";
+import { toolGuidance } from "../src/backend/agent/tool-guidance";
+import { AgentStore } from "../src/backend/agent-store";
 import { runCauseEffect } from "../src/backend/effect-boundary";
 import { CentralAuthManager } from "../src/main/central-auth-manager";
 import { ManagedSkillService } from "../src/main/managed-skill-service";
@@ -49,6 +51,24 @@ assert.deepEqual(memoryContext([], { storedMemoryCount: 99 }), { memories: [], s
 assert.ok(VISIBLE_TOOL_DEFINITIONS.every((tool) => !DISABLED_MEMORY_TOOLS.has(tool.name)));
 assert.ok(BUILTIN_TOOL_CATALOG.every((tool) => !DISABLED_MEMORY_TOOLS.has(tool.tool)));
 await runCauseEffect(new ManagedSkillService(join(root, "missing-skill")).syncAll([]));
+const store = new AgentStore(join(root, "data"), join(root, "home"));
+try {
+  await runCauseEffect(store.initialize());
+  const agent = await runCauseEffect(
+    store.createAgent({ name: "Browser access check", description: "", avatarSeed: "browser-check", avatarHue: null }),
+  );
+  const instructions = developerInstructions(agent, store.sharedRoot, [], root);
+  assert.ok(instructions.includes("Do not redirect an explicit request for their browser"));
+  assert.ok(instructions.includes("the user's Chrome, Chromium, and other Linux/Omarchy applications"));
+  assert.ok(!instructions.includes("Use only openbot_browser"));
+  const guidance = toolGuidance("openbot_browser", "snapshot", agent);
+  assert.ok(guidance.includes("do not substitute the embedded browser"));
+  assert.ok(!guidance.includes("For every browser task"));
+  const disabled = developerInstructions({ ...agent, computerUse: false }, store.sharedRoot, [], root);
+  assert.ok(disabled.includes("The user turned Computer Use off for you"));
+} finally {
+  store.database.close();
+}
 await writeFile(
   join(out, "report.json"),
   `${JSON.stringify({ passed: true, restartChecks: 2, accountRequests: requests, memories: "disabled", automaticSkills: "disabled" }, null, 2)}\n`,

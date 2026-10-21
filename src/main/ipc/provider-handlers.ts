@@ -1,4 +1,5 @@
 import { Effect } from "effect";
+import { openExternal } from "../external-browser";
 // Signing in to a provider, storing the optional provider API keys, and downloading the CLI
 // runtimes the providers need.
 
@@ -13,7 +14,6 @@ import {
 } from "@openbot/contracts/ipc";
 import { isDynamicRecord, isString } from "@openbot/contracts/runtime-values";
 import { sourceText } from "@openbot/i18n/source";
-import { shell } from "electron";
 import { AgentLifecycleFailed, type AgentService } from "../../backend/agent-service";
 import { runCauseEffect } from "../../backend/effect-boundary";
 import type { ProviderCredentialStore } from "../provider-credential-store";
@@ -46,7 +46,7 @@ export function providerIpcHandlers({
           service.connectProvider(provider, async (value) => {
             const url = new URL(value);
             if (url.protocol !== "https:") throw new Error(sourceText("error.provider.httpsSignInLinkOnly"));
-            await shell.openExternal(url.toString());
+            await openExternal(url.toString());
           }),
         ),
       ),
@@ -106,7 +106,7 @@ export function providerIpcHandlers({
           service.connectProviderAccount(provider, accountId, async (value) => {
             const url = new URL(value);
             if (url.protocol !== "https:") throw new Error(sourceText("error.provider.httpsSignInLinkOnly"));
-            await shell.openExternal(url.toString());
+            await openExternal(url.toString());
           }),
         ),
       ),

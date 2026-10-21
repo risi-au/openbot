@@ -41,6 +41,7 @@ import {
   readDevelopmentRemoteDebuggingPort,
   shouldAutoStartHost,
 } from "./development-profile";
+import { openExternal } from "./external-browser";
 import { filePreviewPages } from "./file-preview-pages";
 import { hostAllowsTenantLaunch } from "./host-update-coordinator";
 import { takeHostedServerEnvironment } from "./hosted-server-bootstrap";
@@ -571,7 +572,7 @@ function registerIpcHandlers({
     ...browserDockIpcHandlers({ browserDock }),
     ...computerUseIpcHandlers({
       cuaDriver,
-      openExternal: (url) => shell.openExternal(url),
+      openExternal: (url) => openExternal(url),
       permissionHelp: computerUsePermissionHelp,
     }),
     ...providerIpcHandlers({ service, providerRuntimes, credentials: providerCredentials }),
@@ -579,7 +580,7 @@ function registerIpcHandlers({
     ...accountIpcHandlers({ centralAuth, host }),
     ...skillIpcHandlers({ skills, getMainWindow, translate: language.translate }),
     ...hostedSiteIpcHandlers({ hostedSites, remoteServers, getMainWindow, translate: language.translate }),
-    ...githubConnectorIpcHandlers({ githubConnector, remoteServers, openExternal: (url) => shell.openExternal(url) }),
+    ...githubConnectorIpcHandlers({ githubConnector, remoteServers, openExternal: (url) => openExternal(url) }),
     ...onePasswordConnectorIpcHandlers({ onePasswordConnector, remoteServers }),
     ...bitwardenConnectorIpcHandlers({ bitwardenConnector }),
     ...billingIpcHandlers({ billing }),
@@ -611,7 +612,7 @@ function registerIpcHandlers({
       notificationPreference,
       translate: language.translate,
       requestPermission: () => requestDesktopNotificationPermission(notificationPreference, language.translate),
-      openExternal: (url) => shell.openExternal(url),
+      openExternal: (url) => openExternal(url),
     }),
     ...teamIpcHandlers({
       host,
@@ -650,7 +651,7 @@ function registerIpcHandlers({
       messaging,
       remoteServers,
       relayedInstalls: relayedMessagingInstalls,
-      openExternal: (url) => shell.openExternal(url),
+      openExternal: (url) => openExternal(url),
     }),
     ...mcpServerIpcHandlers({
       service,
@@ -682,9 +683,9 @@ function registerIpcHandlers({
       messageLinks: new MessageLinkRelay({
         remoteServers,
         relay: signInRelayClient,
-        openUrl: (url) => openHttpLink(url, (address) => shell.openExternal(address)),
+        openUrl: (url) => openHttpLink(url, (address) => openExternal(address)),
       }),
-      openExternal: (address) => shell.openExternal(address),
+      openExternal: (address) => openExternal(address),
     }),
     ...browserIpcHandlers({ browserPictureInPicture, browser, remoteServers, browserView }),
   });

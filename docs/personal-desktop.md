@@ -33,6 +33,8 @@ Do not use both app copies for the same unfinished task. Work after the import s
 
 ## Build and maintain
 
+Browser work uses the embedded browser by default. An explicit request to use the user's browser or Linux/Omarchy desktop uses OpenBot Computer Use when it is enabled for that agent. Existing Computer Use and workspace access settings still apply. External connection and sign-in links use the original desktop environment so that Linux opens the normal default browser and profile. This does not import provider skills, plugins, or memory.
+
 Use a task worktree. Install the lockfile, prepare the Linux Computer Use driver, and build the desktop package.
 
 ```sh

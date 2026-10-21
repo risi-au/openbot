@@ -19,6 +19,7 @@ import { type AgentAdminSettingsService, createAgentAdminSettings } from "./agen
 import { spawnAgentDatabaseHost } from "./agent-database-host-process";
 import { agentDisplayEnvironment, hasSeparateAgentDisplay } from "./agent-display";
 import { type AgentHostSettingsService, createAgentHostSettings } from "./agent-host-settings";
+import { openExternal } from "./external-browser";
 import { HostReleaseService, readInstallationMode } from "./host-release-service";
 import {
   CONTAINER_UPDATE_PATHS,
@@ -662,7 +663,7 @@ async function createMessagingServices({
             ? centralAuth.unlinkSlackWorkspace(hostId, workspaceId).pipe(toSlackConnectFailed)
             : Effect.void;
         }),
-      openExternal: (url) => shell.openExternal(url),
+      openExternal: (url) => openExternal(url),
     },
     discordApp: {
       authorize: (input) =>
@@ -689,7 +690,7 @@ async function createMessagingServices({
           const hostId = readHostId();
           return hostId ? centralAuth.unlinkDiscordGuild(hostId, guildId).pipe(toDiscordConnectFailed) : Effect.void;
         }),
-      openExternal: (url) => shell.openExternal(url),
+      openExternal: (url) => openExternal(url),
     },
     telegramApp: {
       createLink: () =>
@@ -722,7 +723,7 @@ async function createMessagingServices({
                 .pipe(Effect.mapError((error) => new MessagingOperationFailed({ cause: error.cause })))
             : Effect.void;
         }),
-      openExternal: (url) => shell.openExternal(url),
+      openExternal: (url) => openExternal(url),
     },
   });
   // Not awaited: a connection waits for Slack, and the app does not wait for it.
@@ -900,11 +901,11 @@ export async function createApplicationServices({
     const hostId = teamStore.getIdentity()?.serverId;
     return hostId ? centralAuth.hostSiteCredential(hostId) : null;
   });
-  const billing = new BillingDesktopService(centralAuth, (url) => shell.openExternal(url));
-  const license = new LicenseDesktopService(centralAuth, (url) => shell.openExternal(url));
+  const billing = new BillingDesktopService(centralAuth, (url) => openExternal(url));
+  const license = new LicenseDesktopService(centralAuth, (url) => openExternal(url));
   const hostedServers = new HostedServerDesktopService(
     withHostingDeveloperKey(centralAuth, hostingDeveloperKey),
-    (url) => shell.openExternal(url),
+    (url) => openExternal(url),
     Date.now,
     // A new server is running, but the joined list has no entry for it yet: read the list again.
     (serverId) => {
@@ -1166,7 +1167,7 @@ export async function createApplicationServices({
   // A joined server's sign-in can send its callback to this same port: the host's own listener
   // uses the same port number. A `state` that no local sign-in started goes to the relay.
   const signInRelayClient = new SignInRelayClient({
-    openExternal: (url) => shell.openExternal(url),
+    openExternal: (url) => openExternal(url),
     language,
     ownListener: () =>
       mcpOAuthRedirect
@@ -1201,7 +1202,7 @@ export async function createApplicationServices({
   }
   const mcpOAuth = new McpOAuth({
     storage: mcpOAuthStore,
-    openExternal: (url) => shell.openExternal(url),
+    openExternal: (url) => openExternal(url),
     redirectUrl: mcpOAuthRedirect?.redirectUrl ?? MCP_OAUTH_REDIRECT_URL,
     logger: createOpenBotLogger("mcp-oauth"),
   });
@@ -1217,7 +1218,7 @@ export async function createApplicationServices({
     store: new GitHubConnectorStore(join(app.getPath("userData"), GITHUB_CONNECTOR_FILE), secretCipher),
     toolDirectory: join(app.getPath("userData"), "provider-state", "github"),
     apiUrl: centralAuthApiUrl,
-    openExternal: (url) => shell.openExternal(url),
+    openExternal: (url) => openExternal(url),
   });
   await runCauseEffect(githubConnector.load());
   teardown.push(TEARDOWN_ORDER.githubConnector, "the GitHub connection", () =>
@@ -1241,7 +1242,7 @@ export async function createApplicationServices({
     cliInstall: onePasswordCliTarget
       ? { directory: join(app.getPath("userData"), "provider-state", "1password-cli"), target: onePasswordCliTarget }
       : null,
-    openExternal: (url) => shell.openExternal(url),
+    openExternal: (url) => openExternal(url),
   });
   await runCauseEffect(onePasswordConnector.load());
   performance.mark("openbot:services.connectors");
@@ -2038,7 +2039,7 @@ export async function createApplicationServices({
         try: async () => {
           if (action === "reveal") shell.showItemInFolder(appPath);
           else {
-            await shell.openExternal(MAC_PERMISSION_URLS[action]);
+            await openExternal(MAC_PERMISSION_URLS[action]);
             await computerUsePermissionHelp.show(action, appPath);
           }
         },

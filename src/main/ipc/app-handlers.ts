@@ -1,4 +1,5 @@
 import { Effect, Semaphore } from "effect";
+import { openExternal } from "../external-browser";
 // App identity, first-run setup, the analytics preference, external links and the data and
 // diagnostics exports.
 
@@ -11,7 +12,7 @@ import {
   type ExternalDestination,
   GROK_BOT_EXPORT_URL,
 } from "@openbot/contracts/ipc";
-import { app, type BrowserWindow, shell } from "electron";
+import { app, type BrowserWindow } from "electron";
 import { version as developmentVersion } from "../../../package.json";
 import type { AgentService } from "../../backend/agent-service";
 import type { BrowserHost } from "../../backend/browser-host";
@@ -185,10 +186,10 @@ export function appIpcHandlers({
         return state;
       }),
       openExternal: payloadHandler(parseExternalDestination, (parsed) => {
-        return shell.openExternal(EXTERNAL_DESTINATIONS[parsed]);
+        return openExternal(EXTERNAL_DESTINATIONS[parsed]);
       }),
       openUrl: payloadHandler(stringPayload("URL", INPUT_LIMITS.browserUrl), (url) =>
-        openHttpLink(url, (address) => shell.openExternal(address)),
+        openHttpLink(url, (address) => openExternal(address)),
       ),
     },
     maintenance: {

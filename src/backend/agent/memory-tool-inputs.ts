@@ -1,6 +1,14 @@
 import { INPUT_LIMITS } from "@openbot/contracts/input-limits";
 import { z } from "zod";
 
+export const DISABLED_MEMORY_TOOLS = new Set([
+  "search_memories",
+  "list_memories",
+  "set_memory_inclusion",
+  "remember",
+  "forget_memory",
+]);
+
 const memoryId = z.string().min(1).max(INPUT_LIMITS.identifier);
 
 export const searchMemoriesInput = z.strictObject({

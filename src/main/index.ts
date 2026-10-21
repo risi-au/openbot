@@ -1,3 +1,4 @@
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { uptime } from "node:os";
 import { join, resolve } from "node:path";
 import { parseInviteUrl, selfHostedApiOrigin } from "@openbot/contracts/invite-links";
@@ -120,7 +121,6 @@ import { voiceIpcHandlers } from "./ipc/voice-handlers";
 import { workflowIpcHandlers } from "./ipc/workflow-handlers";
 import { KeepAwake } from "./keep-awake";
 import { stopAppImageCrashpadHandlerAtExit } from "./linux-appimage-crashpad";
-import { installLinuxDesktopEntry } from "./linux-desktop-entry";
 import { configureLinuxGpu } from "./linux-gpu-mode";
 import { configureLinuxPasswordStore } from "./linux-password-store";
 import { restartOnXWaylandWithoutMonitor, takeXWaylandRestartMarker } from "./linux-wayland-output";
@@ -137,6 +137,7 @@ import {
 import { ensureMacApplicationPresence, secondLaunchResponse } from "./main-window-state";
 import { MessageLinkRelay, openHttpLink } from "./message-link-relay";
 import { recoverFromNewerDatabase } from "./newer-database-recovery";
+import { personalCodexConfig, personalEnvironment } from "./personal-environment";
 import { startMainLog } from "./provider-log";
 import { notifyRemoteControlStarted } from "./remote-control-question";
 import { watchRemoteHostDirectory } from "./remote-server-host-directory";
@@ -290,10 +291,26 @@ if (commandLineUserDataDirectory) {
       ),
     ),
   );
+} else {
+  app.setPath("userData", join(app.getPath("appData"), "OpenBot Personal"));
 }
-app.setName("OpenBot");
+const providerEnvironment = personalEnvironment(app.getPath("userData"));
+for (const [key, value] of Object.entries(providerEnvironment)) {
+  if (value === undefined) delete process.env[key];
+  else process.env[key] = value;
+}
+mkdirSync(join(app.getPath("userData"), "home"), { recursive: true, mode: 0o700 });
+if (app.isPackaged) process.chdir(join(app.getPath("userData"), "home"));
+const personalCodexDirectory = join(app.getPath("userData"), "home/.codex");
+mkdirSync(personalCodexDirectory, { recursive: true, mode: 0o700 });
+const personalConfigPath = join(personalCodexDirectory, "config.toml");
+const personalConfig = existsSync(personalConfigPath) ? readFileSync(personalConfigPath, "utf8") : "";
+if (!personalConfig.includes("# OpenBot Personal defaults")) {
+  writeFileSync(personalConfigPath, personalConfig + personalCodexConfig(app.getPath("userData")), { mode: 0o600 });
+}
+app.setName("OpenBot Personal");
 app.enableSandbox();
-if (process.platform === "win32") app.setAppUserModelId("app.openbot.desktop");
+if (process.platform === "win32") app.setAppUserModelId("au.risi.openbot.personal");
 // Linux: on Wayland, Chromium waits until a monitor is on before it starts. With none, start again on
 // XWayland. Before the single-instance lock, so that the new process can take it. A parent process or
 // systemd watches the process, the output and the input of a headless server, so it does not restart.
@@ -1043,6 +1060,8 @@ async function presentApplication(): Promise<void> {
     (policy) => app.setActivationPolicy(policy),
     () => app.dock?.show() ?? Promise.resolve(),
   );
+  // The personal fork must not replace the upstream app's launcher or protocol handler.
+  if (process.env.OPENBOT_PERSONAL_MODE === "1") return;
   // Linux registers the scheme through xdg-settings, which can only name a desktop entry that
   // exists, so an AppImage writes its own first. On Windows the NSIS installer writes the scheme
   // (`build/installer.nsh`), and each start writes it again for installs from before that script.

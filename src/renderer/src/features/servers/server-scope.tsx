@@ -306,11 +306,7 @@ const ServerScope = createSimpleContext({
 
     onSettled(() => {
       const handleGlobalSearchShortcut = (event: KeyboardEvent) => {
-        if (
-          !isGlobalSearchShortcut(event) ||
-          centralAuth().status !== "signed_in" ||
-          setupState()?.completed !== true
-        ) {
+        if (!isGlobalSearchShortcut(event) || !signedInAccount() || setupState()?.completed !== true) {
           return;
         }
         event.preventDefault();

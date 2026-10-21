@@ -96,6 +96,7 @@ interface CentralAuthManagerOptions {
   canPersist?: () => boolean;
   /** True when the Linux keyring failed in this process and a key file of OpenBot now keeps the secrets. */
   keyringChanged?: () => boolean;
+  localOnly?: boolean;
   fetch?: AuthFetcher;
   startupRetryWindowMs?: number;
   startupRequestTimeoutMs?: number;
@@ -223,6 +224,7 @@ export class CentralAuthManager extends EventEmitter<CentralAuthEvents> {
       mobileConnectApiUrl: options.mobileConnectApiUrl ?? options.apiUrl,
       canPersist: options.canPersist ?? (() => true),
       keyringChanged: options.keyringChanged ?? (() => false),
+      localOnly: options.localOnly ?? false,
       fetch: fetcher,
       startupRetryWindowMs: options.startupRetryWindowMs ?? STARTUP_RETRY_WINDOW_MS,
       startupRequestTimeoutMs: options.startupRequestTimeoutMs ?? STARTUP_REQUEST_TIMEOUT_MS,
@@ -1514,6 +1516,7 @@ export class CentralAuthManager extends EventEmitter<CentralAuthEvents> {
   ): Effect.fn.Return<CentralAuthState, CentralAuthOperationError, CentralAuthTransport> {
     this.#setState({ status: "loading" });
     let keyringChanged = false;
+    if (this.#options.localOnly) return this.#setState({ status: "signed_out" });
     // A session that cannot be read now stays on disk: a Keychain that is locked or asks for
     // permission at startup can open it at the next start, and the next sign-in replaces it.
     if (this.#options.canPersist()) {

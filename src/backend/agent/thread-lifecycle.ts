@@ -103,7 +103,8 @@ const logger = createOpenBotLogger("thread-lifecycle");
  * its MCP namespaces direct on resume and keeps working, and a new version would replace each Codex
  * session with a handoff. Such a session defers the tools from its next new session.
  * Version 9 adds `image_gen` to those namespaces. Version 10 gives a stdio server its working
- * directory as `cwd`; before, Codex did not get such a server.
+ * directory as `cwd`; before, Codex did not get such a server, and refreshes the instructions that
+ * allow requested desktop browser access.
  */
 const CODEX_MCP_ADAPTER_VERSION = 10;
 

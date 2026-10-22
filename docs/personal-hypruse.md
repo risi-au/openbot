@@ -2,6 +2,8 @@
 
 The personal fork selects an enabled stdio connection named `hypruse` instead of the built-in CUA tools. Disable that connection to return to CUA. The existing per-agent Computer Use switch controls both. Standard OpenBot mode is unchanged.
 
+Hypruse can target requested existing windows on any workspace. `HYPRUSE_AGENT_WORKSPACES` only chooses the default placement for new apps; it is not an access limit. A new app can also launch on a specified hidden workspace outside that range. Background-only input, the focus guard, and any explicitly configured `HYPRUSE_CONFINE` policy still apply.
+
 This is a connection option, not a new desktop or an independent input seat. The Computer Use setup panel still describes CUA's permissions and cursor; Hypruse readiness is checked through its connection. CUA's overlay does not report Hypruse actions.
 
 Install `hypruse==0.13.0` into a private virtual environment in the personal profile. Run its Python with the packaged `resources/hypruse/openbot-hypruse.py` as the MCP command argument. This launcher forces background mode, disables verbatim text journaling, and blocks accessibility focus and focus-only actions. It fails closed on an unreviewed Hypruse version. Do not register shared Codex or Claude plugins or install global skills.

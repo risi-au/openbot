@@ -1,5 +1,7 @@
 ### Changed
 
+- Hypruse can target windows on any requested workspace. Its default launch range no longer confines access; background-only input and focus guards remain enabled.
+
 - The optional Hypruse connection selects background desktop tools in personal mode. Disabling it restores CUA. Its pinned launcher blocks accessibility focus.
 
 - The personal desktop fork opens local workspaces without an OpenBot email account. Cloud requests still require account authentication.

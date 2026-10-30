@@ -7,6 +7,107 @@ the [root changelog](../../CHANGELOG.md).
 
 ## [Unreleased]
 
+## [1.4.4] - In review
+
+### Added
+
+- Tap the activity row of a working agent to open a sheet with each thought of the turn in full and the progress lines between them. The sheet updates live and keeps the newest text in view until you scroll up; "Latest" goes back to it.
+- A finished turn shows a row above its answer with how long the agent thought and its step count. Tap it to open the same sheet for that turn.
+- iPad support. The app fills the iPad screen in portrait and landscape.
+- On a wide screen, such as iPad, an open iPhone Duo or an open Android foldable, the chat list stays beside the open chat.
+- On a wide screen, you can drag the edge of the chat list to make it wider or narrower. Drag it to the left to show only avatars.
+- iPhone Duo support. When you open iPhone Duo, the chat list and the chat show on each side of the fold. When you fold it, the open chat stays open.
+- When a new version of the app is available, home shows a header with the OpenBot eyes. Tap Update to open the store page, or Later to hide it until the next version.
+- An update that does not need the store installs in the app: Update restarts OpenBot with the new version.
+- Tap What's new under the update buttons to read the release notes of each new version. The notes slide down from under the header, over the chat list.
+- Settings › Notifications is now the one place for notifications: choose a server, then All, Needs me, or Off for the whole server and for each of its agents. These choices apply on all your devices, and a change shows at once on the others; a mute applies to this phone only. The agent screen shows the level and opens Settings › Notifications; the server settings no longer have a Notifications row. The agent screen no longer has its own Notifications switch, and "Notify me about" opens the Notifications view inside the agent sheet. An agent that was switched off for everyone shows "Turn on". The server needs the latest OpenBot.
+
+### Changed
+
+- "Waiting for replies" shows when a teammate waits for your approval, your answer or you in the browser, with the command or the question. Review, Answer or Take over opens the teammate's chat.
+- Code blocks in chat now wrap long lines, so you can read an email draft or a long command without scrolling sideways. Line breaks and Copy do not change.
+- The MCP server screen now says that Claude and Codex agents get a server that has a working directory.
+- The Live Activity shows the first sentences of a reply, without code blocks, headings or mail headers, and hides secrets and email addresses as "•••". Approve shows only for a command that it shows in full.
+
+### Fixed
+
+- Show the reason of a group chat task that stopped because its member was removed or is not
+  available in your language. Before, the reason was always in English.
+- Show all of an iPhone message that starts a line with an agent name, code or a link. Before, the
+  lines had too much space between them, and the end of the message was cut with "…".
+- Buttons and text no longer go under the side bar of iPhone Duo or the screen edges in landscape.
+- On iPhone Duo with the side bar, the chat buttons now go into the side bar, as on the home screen.
+- On iPhone Duo with the side bar, page titles no longer go under the blur at the top.
+- Open a server that is online when the app starts and the first server of the list does not connect
+  in 4 seconds. Before, the app stayed on that server for 30 seconds or more, for example when the
+  computer of that server was asleep. The order of the servers does not change.
+- Open the iPhone app on iPhone Duo. Before, the app could stop on a black screen at start.
+- Open the mobile app in Expo Go. Before, it showed an error that the `ReservedRegionsView` native component is not registered.
+- A sign-in code request waits up to 35 seconds for the account server, as on desktop. Before, the app showed that the account service was not reachable after 10 seconds while the server still sent the code.
+- The Live Activity in the Apple Watch Smart Stack fits its card: the agent photo, the name, two lines of text and the unread count, with a margin at each edge. Before, the watch showed the Lock Screen layout made smaller, with the content at the edges and the unread count outside the card.
+- The Live Activity starts again when you open the app after iOS or the computer ended it. Before, it could stay frozen on the Lock Screen and in the Dynamic Island for hours. An activity that is almost 8 hours old also starts again, so iOS does not stop it while you are away.
+- Notifications show the agent name and the text also after the app starts without network. Before, they showed only "OpenBot", and a tap opened nothing.
+- Notifications start to work when Apple or Google gave no push token at the first try. Before, the phone got no notifications until you opened the app again.
+- Notifications and Live Activity updates reach an iPhone app that is not from the App Store, such as a build that Xcode installs or an ad hoc build. Before, the app could name the wrong Apple push environment, and Apple refused every notification and update for it.
+- Show the full names in the chat + menu. Before, a long name, such as "Use skill or app" in Polish, was cut off.
+
+## [1.4.3] - 2026-10-29 (iOS)
+
+### Added
+
+- The Marketplace now lists Neon, Prisma, Netlify, Railway, Atlassian (Jira and Confluence), Todoist and Hugging Face.
+- Attach MP4 videos in chat when the host runs a version of OpenBot that accepts them.
+- The sidebar has Workflows. See the workflows of a server, the status of each last run, and the runs that wait for you.
+- Pin a workflow to the sidebar. A pinned workflow shows its last run, and its button runs it or opens the run that waits for you.
+- Open a run to see the status and output of each step. Approve or decline a step that waits, retry a step that failed, or stop the run.
+- Edit a workflow on the phone: change its name and trigger, add steps, change their settings, move them, duplicate them and delete them. Make a new workflow with the + button.
+- The Marketplace now lists Trello. Agents can work with your boards, lists and cards after you sign in to Trello.
+- Dutch interface. Choose Nederlands in Settings > App language, or keep System default on an
+  iPhone that uses Dutch.
+- An owner or admin can connect Bitwarden or Vaultwarden on a joined server, in Server settings ›
+  Connectors. Enter the server address, the API key and the master password. The server keeps them;
+  the phone does not.
+- An owner or admin can manage the Vault of a server in Server settings › Vault: add, change and
+  delete logins, cards and contact info, and import passwords from a CSV file. The phone can set a
+  new password, card number or security code, but it never shows a saved one.
+- Server settings > Providers can save the API key of DeepSeek, OpenRouter and Inception on the
+  server. Agents on these providers show in the agent list and the model picker.
+- Server settings > Providers shows the mark of each provider, and a Default provider choice for
+  the new agents of the server. The choice needs an updated server.
+- An owner or admin can add, change and delete the API keys in a server's Vault from the iPhone app,
+  when the server has the OpenBot version that keeps API keys. The phone sends a new key once and
+  cannot show a saved key.
+- An agent's chat has threads, as on desktop. Tap the agent's name in the chat header to open the thread menu: switch to the main chat or to an open thread, start a new thread, see all threads, or open the agent's info. A dot in the agent's color on the name, and beside each thread in the menu, shows a thread with messages that you have not read, on the phone or on desktop.
+- Start a new thread from the thread menu, or with + on an agent's Threads page. Your first message starts it, and the main chat does not change. The + on the Threads page of the server asks which agent starts the thread.
+- Send files in a thread, as in the agent's chat: tap + in the thread composer. The server must have the newest version of OpenBot.
+- Rename, archive, restore or delete a thread from its ⋯ menu, or touch and hold a row on the Threads page. A thread that runs cannot be deleted until you stop it.
+- On iPhone, you can send a share to an agent without opening the app. Tap Share in another app, tap OpenBot, choose the agent and tap Send. The iOS share sheet also shows the agents that you send messages to, so you can tap one of them directly. When the share cannot be sent, such as with the app lock on, OpenBot opens with the share as before.
+- You can now talk with an agent by voice, as on the desktop. In an agent chat or a channel, tap the microphone in the message field. The message field turns into a call bar with the agent's glow, and the chat stays in view. The agent listens until you stop speaking, sends what you said, and reads its answer aloud while it writes it. Then it listens again. In a channel, the call bar shows the leader. When the leader gives the task to a member, the bar changes to that member, and it reads the first agent that answers. The call bar mutes the microphone, interrupts the answer, and ends the conversation.
+- A new Voice page in Settings, with a Listening tab and a Speaking tab. Choose the voice that reads replies: Supertonic 3, the same voice as on the desktop, which you download once and which runs on your phone, or ElevenLabs with your own API key. You can choose a voice, listen to a sample, and remove the model or the key.
+- Speech recognition in more languages, as on the desktop. In Settings > Voice, choose what recognizes your speech: the phone recognizer, which hears one language; Parakeet v3, which you download once (670 MB), runs on your phone and finds the language you speak in 25 European languages; or ElevenLabs Scribe with your own API key, which finds more than 90 languages. The choice applies to voice conversations and to dictation. Parakeet needs a phone with 6 GB of memory or more.
+
+### Changed
+
+- The developer of each Marketplace app now shows as a name, for example "Notion", not as a web address.
+- In the message queue, tap a teammate's answer to steer it into the running turn. Before, the
+  answer had no actions and waited for the turn to end.
+- The app icon has a new design, with a dark appearance on iOS.
+- Settings > About opens the privacy policy on openbot.run instead of GitHub.
+- The Threads row of the server menu shows how many threads have unread messages, not "needs you".
+- The Threads page puts threads in Working, Unread, Read and Archived sections. A host that does not keep read marks still shows Needs you, Working and Waiting.
+- Tasks are now called threads, as on desktop. The Tasks page is now Threads, and Close and Reopen are now Archive and Restore.
+- The agent's chat no longer shows a card for each open thread. The thread menu on the agent's name lists them.
+- A long press on an agent, a channel, a workflow, a thread or a server gives a vibration when its menu opens, so you know when to lift your finger. On Android, the menu also opens sooner.
+- In an agent chat and in a channel, the microphone now starts a voice conversation in place of dictation with review. When no voice is ready, it opens Settings > Voice. Threads still dictate a message that you can review before you send it.
+
+### Fixed
+
+- An SVG or HEIC path in an agent answer showed as code. It now shows with a file badge, like
+  other file paths.
+- When you return to the app, channel pictures no longer fade while the app connects again quietly. Agents already stayed visible.
+- On Android, the top edge fade no longer covers the top of the screen title before you scroll.
+- On Android, a menu with a long item, such as the agent menu, now holds all its items. Before, the last item went out of the bottom of the menu.
+
 ## [1.4.2] - 2026-10-27
 
 ### Added

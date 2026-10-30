@@ -12,11 +12,16 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AppRouteImport } from './routes/app'
 import { Route as AppPreviewRouteImport } from './routes/app-preview'
+import { Route as BrandingRouteImport } from './routes/branding'
 import { Route as ChangelogRouteImport } from './routes/changelog'
 import { Route as CommercialLicenseRouteImport } from './routes/commercial-license'
+import { Route as CommerciallicenseRouteImport } from './routes/commerciallicense'
 import { Route as ContactRouteImport } from './routes/contact'
+import { Route as DpaRouteImport } from './routes/dpa'
 import { Route as JoinRouteImport } from './routes/join'
 import { Route as LlmsDottxtRouteImport } from './routes/llms[.]txt'
+import { Route as PricingRouteImport } from './routes/pricing'
+import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as PrivacyPolicyRouteImport } from './routes/privacy-policy'
 import { Route as ReportSiteRouteImport } from './routes/report-site'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
@@ -62,6 +67,7 @@ import { Route as V1AgentTemplatesMineRouteImport } from './routes/v1/agent-temp
 import { Route as V1AuthLogoutRouteImport } from './routes/v1/auth/logout'
 import { Route as V1AvatarsUserIdRouteImport } from './routes/v1/avatars/$userId'
 import { Route as V1GithubInstallationTokensRouteImport } from './routes/v1/github/installation-tokens'
+import { Route as V1MeAnalyticsRouteImport } from './routes/v1/me/analytics'
 import { Route as V1MeAvatarRouteImport } from './routes/v1/me/avatar'
 import { Route as V1MeProfileRouteImport } from './routes/v1/me/profile'
 import { Route as V1MobileAuthDevicesRouteImport } from './routes/v1/mobile-auth/devices'
@@ -69,6 +75,7 @@ import { Route as V1MobileAuthLinkRouteImport } from './routes/v1/mobile-auth/li
 import { Route as V1MobileAuthRedeemRouteImport } from './routes/v1/mobile-auth/redeem'
 import { Route as V1MobileAuthSessionRouteImport } from './routes/v1/mobile-auth/session'
 import { Route as V1MobileAuthTicketRouteImport } from './routes/v1/mobile-auth/ticket'
+import { Route as V1MobileChangelogRouteImport } from './routes/v1/mobile/changelog'
 import { Route as V1MobileFeaturesRouteImport } from './routes/v1/mobile/features'
 import { Route as V1SitesIndexRouteImport } from './routes/v1/sites/index'
 import { Route as V1SitesSiteIdRouteImport } from './routes/v1/sites/$siteId'
@@ -101,6 +108,7 @@ import { Route as V1MeBillingIndexRouteImport } from './routes/v1/me/billing/ind
 import { Route as V1MeBillingPortalRouteImport } from './routes/v1/me/billing/portal'
 import { Route as V1MeLicenseIndexRouteImport } from './routes/v1/me/license/index'
 import { Route as V1MeLicenseCheckoutRouteImport } from './routes/v1/me/license/checkout'
+import { Route as V1MeLicensePlanRouteImport } from './routes/v1/me/license/plan'
 import { Route as V1MeLicenseRenewalRouteImport } from './routes/v1/me/license/renewal'
 import { Route as V1MeLicenseUsersRouteImport } from './routes/v1/me/license/users'
 import { Route as V1MobileAuthDevicesSessionIdRouteImport } from './routes/v1/mobile-auth/devices/$sessionId'
@@ -135,6 +143,7 @@ import { Route as V1SitesUploadsUploadIdFileRouteImport } from './routes/v1/site
 import { Route as V1SkillsSkillIdVersionsVersionIdRouteImport } from './routes/v1/skills/$skillId/versions/$versionId'
 import { Route as V1SkillsAdminFeaturedSkillIdRouteImport } from './routes/v1/skills/admin/featured/$skillId'
 import { Route as V1SkillsAdminSubmissionsVersionIdRouteImport } from './routes/v1/skills/admin/submissions/$versionId'
+import { Route as V1SkillsAdminVerifiedSkillIdRouteImport } from './routes/v1/skills/admin/verified/$skillId'
 import { Route as V2HostingServersServerIdIndexRouteImport } from './routes/v2/hosting/servers/$serverId/index'
 import { Route as V2HostingServersServerIdActivityRouteImport } from './routes/v2/hosting/servers/$serverId/activity'
 import { Route as V2HostingServersServerIdCheckoutRouteImport } from './routes/v2/hosting/servers/$serverId/checkout'
@@ -182,6 +191,11 @@ const AppPreviewRoute = AppPreviewRouteImport.update({
   path: '/app-preview',
   getParentRoute: () => rootRouteImport,
 } as any).lazy(() => import('./routes/app-preview.lazy').then((d) => d.Route))
+const BrandingRoute = BrandingRouteImport.update({
+  id: '/branding',
+  path: '/branding',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ChangelogRoute = ChangelogRouteImport.update({
   id: '/changelog',
   path: '/changelog',
@@ -192,9 +206,19 @@ const CommercialLicenseRoute = CommercialLicenseRouteImport.update({
   path: '/commercial-license',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CommerciallicenseRoute = CommerciallicenseRouteImport.update({
+  id: '/commerciallicense',
+  path: '/commerciallicense',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ContactRoute = ContactRouteImport.update({
   id: '/contact',
   path: '/contact',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DpaRoute = DpaRouteImport.update({
+  id: '/dpa',
+  path: '/dpa',
   getParentRoute: () => rootRouteImport,
 } as any)
 const JoinRoute = JoinRouteImport.update({
@@ -205,6 +229,16 @@ const JoinRoute = JoinRouteImport.update({
 const LlmsDottxtRoute = LlmsDottxtRouteImport.update({
   id: '/llms.txt',
   path: '/llms.txt',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PricingRoute = PricingRouteImport.update({
+  id: '/pricing',
+  path: '/pricing',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PrivacyRoute = PrivacyRouteImport.update({
+  id: '/privacy',
+  path: '/privacy',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PrivacyPolicyRoute = PrivacyPolicyRouteImport.update({
@@ -436,6 +470,11 @@ const V1GithubInstallationTokensRoute =
     path: '/v1/github/installation-tokens',
     getParentRoute: () => rootRouteImport,
   } as any)
+const V1MeAnalyticsRoute = V1MeAnalyticsRouteImport.update({
+  id: '/analytics',
+  path: '/analytics',
+  getParentRoute: () => V1MeRoute,
+} as any)
 const V1MeAvatarRoute = V1MeAvatarRouteImport.update({
   id: '/avatar',
   path: '/avatar',
@@ -469,6 +508,11 @@ const V1MobileAuthSessionRoute = V1MobileAuthSessionRouteImport.update({
 const V1MobileAuthTicketRoute = V1MobileAuthTicketRouteImport.update({
   id: '/v1/mobile-auth/ticket',
   path: '/v1/mobile-auth/ticket',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const V1MobileChangelogRoute = V1MobileChangelogRouteImport.update({
+  id: '/v1/mobile/changelog',
+  path: '/v1/mobile/changelog',
   getParentRoute: () => rootRouteImport,
 } as any)
 const V1MobileFeaturesRoute = V1MobileFeaturesRouteImport.update({
@@ -633,6 +677,11 @@ const V1MeLicenseIndexRoute = V1MeLicenseIndexRouteImport.update({
 const V1MeLicenseCheckoutRoute = V1MeLicenseCheckoutRouteImport.update({
   id: '/license/checkout',
   path: '/license/checkout',
+  getParentRoute: () => V1MeRoute,
+} as any)
+const V1MeLicensePlanRoute = V1MeLicensePlanRouteImport.update({
+  id: '/license/plan',
+  path: '/license/plan',
   getParentRoute: () => V1MeRoute,
 } as any)
 const V1MeLicenseRenewalRoute = V1MeLicenseRenewalRouteImport.update({
@@ -821,6 +870,12 @@ const V1SkillsAdminSubmissionsVersionIdRoute =
     id: '/$versionId',
     path: '/$versionId',
     getParentRoute: () => V1SkillsAdminSubmissionsRoute,
+  } as any)
+const V1SkillsAdminVerifiedSkillIdRoute =
+  V1SkillsAdminVerifiedSkillIdRouteImport.update({
+    id: '/v1/skills/admin/verified/$skillId',
+    path: '/v1/skills/admin/verified/$skillId',
+    getParentRoute: () => rootRouteImport,
   } as any)
 const V2HostingServersServerIdIndexRoute =
   V2HostingServersServerIdIndexRouteImport.update({
@@ -1012,11 +1067,16 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/app': typeof AppRoute
   '/app-preview': typeof AppPreviewRoute
+  '/branding': typeof BrandingRoute
   '/changelog': typeof ChangelogRoute
   '/commercial-license': typeof CommercialLicenseRoute
+  '/commerciallicense': typeof CommerciallicenseRoute
   '/contact': typeof ContactRoute
+  '/dpa': typeof DpaRoute
   '/join': typeof JoinRoute
   '/llms.txt': typeof LlmsDottxtRoute
+  '/pricing': typeof PricingRoute
+  '/privacy': typeof PrivacyRoute
   '/privacy-policy': typeof PrivacyPolicyRoute
   '/report-site': typeof ReportSiteRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
@@ -1061,6 +1121,7 @@ export interface FileRoutesByFullPath {
   '/v1/auth/logout': typeof V1AuthLogoutRoute
   '/v1/avatars/$userId': typeof V1AvatarsUserIdRoute
   '/v1/github/installation-tokens': typeof V1GithubInstallationTokensRoute
+  '/v1/me/analytics': typeof V1MeAnalyticsRoute
   '/v1/me/avatar': typeof V1MeAvatarRoute
   '/v1/me/profile': typeof V1MeProfileRoute
   '/v1/mobile-auth/devices': typeof V1MobileAuthDevicesRouteWithChildren
@@ -1068,6 +1129,7 @@ export interface FileRoutesByFullPath {
   '/v1/mobile-auth/redeem': typeof V1MobileAuthRedeemRoute
   '/v1/mobile-auth/session': typeof V1MobileAuthSessionRoute
   '/v1/mobile-auth/ticket': typeof V1MobileAuthTicketRoute
+  '/v1/mobile/changelog': typeof V1MobileChangelogRoute
   '/v1/mobile/features': typeof V1MobileFeaturesRoute
   '/v1/sites/$siteId': typeof V1SitesSiteIdRoute
   '/v1/sites/reports': typeof V1SitesReportsRoute
@@ -1098,6 +1160,7 @@ export interface FileRoutesByFullPath {
   '/v1/marketplace/agents/mine': typeof V1MarketplaceAgentsMineRoute
   '/v1/me/billing/portal': typeof V1MeBillingPortalRoute
   '/v1/me/license/checkout': typeof V1MeLicenseCheckoutRoute
+  '/v1/me/license/plan': typeof V1MeLicensePlanRoute
   '/v1/me/license/renewal': typeof V1MeLicenseRenewalRoute
   '/v1/me/license/users': typeof V1MeLicenseUsersRoute
   '/v1/mobile-auth/devices/$sessionId': typeof V1MobileAuthDevicesSessionIdRoute
@@ -1135,6 +1198,7 @@ export interface FileRoutesByFullPath {
   '/v1/skills/$skillId/versions/$versionId': typeof V1SkillsSkillIdVersionsVersionIdRouteWithChildren
   '/v1/skills/admin/featured/$skillId': typeof V1SkillsAdminFeaturedSkillIdRoute
   '/v1/skills/admin/submissions/$versionId': typeof V1SkillsAdminSubmissionsVersionIdRoute
+  '/v1/skills/admin/verified/$skillId': typeof V1SkillsAdminVerifiedSkillIdRoute
   '/v2/hosting/servers/$serverId/activity': typeof V2HostingServersServerIdActivityRoute
   '/v2/hosting/servers/$serverId/checkout': typeof V2HostingServersServerIdCheckoutRoute
   '/v2/hosting/servers/$serverId/lifecycle': typeof V2HostingServersServerIdLifecycleRoute
@@ -1171,11 +1235,16 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/app': typeof AppRoute
   '/app-preview': typeof AppPreviewRoute
+  '/branding': typeof BrandingRoute
   '/changelog': typeof ChangelogRoute
   '/commercial-license': typeof CommercialLicenseRoute
+  '/commerciallicense': typeof CommerciallicenseRoute
   '/contact': typeof ContactRoute
+  '/dpa': typeof DpaRoute
   '/join': typeof JoinRoute
   '/llms.txt': typeof LlmsDottxtRoute
+  '/pricing': typeof PricingRoute
+  '/privacy': typeof PrivacyRoute
   '/privacy-policy': typeof PrivacyPolicyRoute
   '/report-site': typeof ReportSiteRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
@@ -1220,6 +1289,7 @@ export interface FileRoutesByTo {
   '/v1/auth/logout': typeof V1AuthLogoutRoute
   '/v1/avatars/$userId': typeof V1AvatarsUserIdRoute
   '/v1/github/installation-tokens': typeof V1GithubInstallationTokensRoute
+  '/v1/me/analytics': typeof V1MeAnalyticsRoute
   '/v1/me/avatar': typeof V1MeAvatarRoute
   '/v1/me/profile': typeof V1MeProfileRoute
   '/v1/mobile-auth/devices': typeof V1MobileAuthDevicesRouteWithChildren
@@ -1227,6 +1297,7 @@ export interface FileRoutesByTo {
   '/v1/mobile-auth/redeem': typeof V1MobileAuthRedeemRoute
   '/v1/mobile-auth/session': typeof V1MobileAuthSessionRoute
   '/v1/mobile-auth/ticket': typeof V1MobileAuthTicketRoute
+  '/v1/mobile/changelog': typeof V1MobileChangelogRoute
   '/v1/mobile/features': typeof V1MobileFeaturesRoute
   '/v1/sites/$siteId': typeof V1SitesSiteIdRoute
   '/v1/sites/reports': typeof V1SitesReportsRoute
@@ -1257,6 +1328,7 @@ export interface FileRoutesByTo {
   '/v1/marketplace/agents/mine': typeof V1MarketplaceAgentsMineRoute
   '/v1/me/billing/portal': typeof V1MeBillingPortalRoute
   '/v1/me/license/checkout': typeof V1MeLicenseCheckoutRoute
+  '/v1/me/license/plan': typeof V1MeLicensePlanRoute
   '/v1/me/license/renewal': typeof V1MeLicenseRenewalRoute
   '/v1/me/license/users': typeof V1MeLicenseUsersRoute
   '/v1/mobile-auth/devices/$sessionId': typeof V1MobileAuthDevicesSessionIdRoute
@@ -1294,6 +1366,7 @@ export interface FileRoutesByTo {
   '/v1/skills/$skillId/versions/$versionId': typeof V1SkillsSkillIdVersionsVersionIdRouteWithChildren
   '/v1/skills/admin/featured/$skillId': typeof V1SkillsAdminFeaturedSkillIdRoute
   '/v1/skills/admin/submissions/$versionId': typeof V1SkillsAdminSubmissionsVersionIdRoute
+  '/v1/skills/admin/verified/$skillId': typeof V1SkillsAdminVerifiedSkillIdRoute
   '/v2/hosting/servers/$serverId/activity': typeof V2HostingServersServerIdActivityRoute
   '/v2/hosting/servers/$serverId/checkout': typeof V2HostingServersServerIdCheckoutRoute
   '/v2/hosting/servers/$serverId/lifecycle': typeof V2HostingServersServerIdLifecycleRoute
@@ -1331,11 +1404,16 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/app': typeof AppRoute
   '/app-preview': typeof AppPreviewRoute
+  '/branding': typeof BrandingRoute
   '/changelog': typeof ChangelogRoute
   '/commercial-license': typeof CommercialLicenseRoute
+  '/commerciallicense': typeof CommerciallicenseRoute
   '/contact': typeof ContactRoute
+  '/dpa': typeof DpaRoute
   '/join': typeof JoinRoute
   '/llms.txt': typeof LlmsDottxtRoute
+  '/pricing': typeof PricingRoute
+  '/privacy': typeof PrivacyRoute
   '/privacy-policy': typeof PrivacyPolicyRoute
   '/report-site': typeof ReportSiteRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
@@ -1380,6 +1458,7 @@ export interface FileRoutesById {
   '/v1/auth/logout': typeof V1AuthLogoutRoute
   '/v1/avatars/$userId': typeof V1AvatarsUserIdRoute
   '/v1/github/installation-tokens': typeof V1GithubInstallationTokensRoute
+  '/v1/me/analytics': typeof V1MeAnalyticsRoute
   '/v1/me/avatar': typeof V1MeAvatarRoute
   '/v1/me/profile': typeof V1MeProfileRoute
   '/v1/mobile-auth/devices': typeof V1MobileAuthDevicesRouteWithChildren
@@ -1387,6 +1466,7 @@ export interface FileRoutesById {
   '/v1/mobile-auth/redeem': typeof V1MobileAuthRedeemRoute
   '/v1/mobile-auth/session': typeof V1MobileAuthSessionRoute
   '/v1/mobile-auth/ticket': typeof V1MobileAuthTicketRoute
+  '/v1/mobile/changelog': typeof V1MobileChangelogRoute
   '/v1/mobile/features': typeof V1MobileFeaturesRoute
   '/v1/sites/$siteId': typeof V1SitesSiteIdRoute
   '/v1/sites/reports': typeof V1SitesReportsRoute
@@ -1417,6 +1497,7 @@ export interface FileRoutesById {
   '/v1/marketplace/agents/mine': typeof V1MarketplaceAgentsMineRoute
   '/v1/me/billing/portal': typeof V1MeBillingPortalRoute
   '/v1/me/license/checkout': typeof V1MeLicenseCheckoutRoute
+  '/v1/me/license/plan': typeof V1MeLicensePlanRoute
   '/v1/me/license/renewal': typeof V1MeLicenseRenewalRoute
   '/v1/me/license/users': typeof V1MeLicenseUsersRoute
   '/v1/mobile-auth/devices/$sessionId': typeof V1MobileAuthDevicesSessionIdRoute
@@ -1454,6 +1535,7 @@ export interface FileRoutesById {
   '/v1/skills/$skillId/versions/$versionId': typeof V1SkillsSkillIdVersionsVersionIdRouteWithChildren
   '/v1/skills/admin/featured/$skillId': typeof V1SkillsAdminFeaturedSkillIdRoute
   '/v1/skills/admin/submissions/$versionId': typeof V1SkillsAdminSubmissionsVersionIdRoute
+  '/v1/skills/admin/verified/$skillId': typeof V1SkillsAdminVerifiedSkillIdRoute
   '/v2/hosting/servers/$serverId/activity': typeof V2HostingServersServerIdActivityRoute
   '/v2/hosting/servers/$serverId/checkout': typeof V2HostingServersServerIdCheckoutRoute
   '/v2/hosting/servers/$serverId/lifecycle': typeof V2HostingServersServerIdLifecycleRoute
@@ -1492,11 +1574,16 @@ export interface FileRouteTypes {
     | '/'
     | '/app'
     | '/app-preview'
+    | '/branding'
     | '/changelog'
     | '/commercial-license'
+    | '/commerciallicense'
     | '/contact'
+    | '/dpa'
     | '/join'
     | '/llms.txt'
+    | '/pricing'
+    | '/privacy'
     | '/privacy-policy'
     | '/report-site'
     | '/sitemap.xml'
@@ -1541,6 +1628,7 @@ export interface FileRouteTypes {
     | '/v1/auth/logout'
     | '/v1/avatars/$userId'
     | '/v1/github/installation-tokens'
+    | '/v1/me/analytics'
     | '/v1/me/avatar'
     | '/v1/me/profile'
     | '/v1/mobile-auth/devices'
@@ -1548,6 +1636,7 @@ export interface FileRouteTypes {
     | '/v1/mobile-auth/redeem'
     | '/v1/mobile-auth/session'
     | '/v1/mobile-auth/ticket'
+    | '/v1/mobile/changelog'
     | '/v1/mobile/features'
     | '/v1/sites/$siteId'
     | '/v1/sites/reports'
@@ -1578,6 +1667,7 @@ export interface FileRouteTypes {
     | '/v1/marketplace/agents/mine'
     | '/v1/me/billing/portal'
     | '/v1/me/license/checkout'
+    | '/v1/me/license/plan'
     | '/v1/me/license/renewal'
     | '/v1/me/license/users'
     | '/v1/mobile-auth/devices/$sessionId'
@@ -1615,6 +1705,7 @@ export interface FileRouteTypes {
     | '/v1/skills/$skillId/versions/$versionId'
     | '/v1/skills/admin/featured/$skillId'
     | '/v1/skills/admin/submissions/$versionId'
+    | '/v1/skills/admin/verified/$skillId'
     | '/v2/hosting/servers/$serverId/activity'
     | '/v2/hosting/servers/$serverId/checkout'
     | '/v2/hosting/servers/$serverId/lifecycle'
@@ -1651,11 +1742,16 @@ export interface FileRouteTypes {
     | '/'
     | '/app'
     | '/app-preview'
+    | '/branding'
     | '/changelog'
     | '/commercial-license'
+    | '/commerciallicense'
     | '/contact'
+    | '/dpa'
     | '/join'
     | '/llms.txt'
+    | '/pricing'
+    | '/privacy'
     | '/privacy-policy'
     | '/report-site'
     | '/sitemap.xml'
@@ -1700,6 +1796,7 @@ export interface FileRouteTypes {
     | '/v1/auth/logout'
     | '/v1/avatars/$userId'
     | '/v1/github/installation-tokens'
+    | '/v1/me/analytics'
     | '/v1/me/avatar'
     | '/v1/me/profile'
     | '/v1/mobile-auth/devices'
@@ -1707,6 +1804,7 @@ export interface FileRouteTypes {
     | '/v1/mobile-auth/redeem'
     | '/v1/mobile-auth/session'
     | '/v1/mobile-auth/ticket'
+    | '/v1/mobile/changelog'
     | '/v1/mobile/features'
     | '/v1/sites/$siteId'
     | '/v1/sites/reports'
@@ -1737,6 +1835,7 @@ export interface FileRouteTypes {
     | '/v1/marketplace/agents/mine'
     | '/v1/me/billing/portal'
     | '/v1/me/license/checkout'
+    | '/v1/me/license/plan'
     | '/v1/me/license/renewal'
     | '/v1/me/license/users'
     | '/v1/mobile-auth/devices/$sessionId'
@@ -1774,6 +1873,7 @@ export interface FileRouteTypes {
     | '/v1/skills/$skillId/versions/$versionId'
     | '/v1/skills/admin/featured/$skillId'
     | '/v1/skills/admin/submissions/$versionId'
+    | '/v1/skills/admin/verified/$skillId'
     | '/v2/hosting/servers/$serverId/activity'
     | '/v2/hosting/servers/$serverId/checkout'
     | '/v2/hosting/servers/$serverId/lifecycle'
@@ -1810,11 +1910,16 @@ export interface FileRouteTypes {
     | '/'
     | '/app'
     | '/app-preview'
+    | '/branding'
     | '/changelog'
     | '/commercial-license'
+    | '/commerciallicense'
     | '/contact'
+    | '/dpa'
     | '/join'
     | '/llms.txt'
+    | '/pricing'
+    | '/privacy'
     | '/privacy-policy'
     | '/report-site'
     | '/sitemap.xml'
@@ -1859,6 +1964,7 @@ export interface FileRouteTypes {
     | '/v1/auth/logout'
     | '/v1/avatars/$userId'
     | '/v1/github/installation-tokens'
+    | '/v1/me/analytics'
     | '/v1/me/avatar'
     | '/v1/me/profile'
     | '/v1/mobile-auth/devices'
@@ -1866,6 +1972,7 @@ export interface FileRouteTypes {
     | '/v1/mobile-auth/redeem'
     | '/v1/mobile-auth/session'
     | '/v1/mobile-auth/ticket'
+    | '/v1/mobile/changelog'
     | '/v1/mobile/features'
     | '/v1/sites/$siteId'
     | '/v1/sites/reports'
@@ -1896,6 +2003,7 @@ export interface FileRouteTypes {
     | '/v1/marketplace/agents/mine'
     | '/v1/me/billing/portal'
     | '/v1/me/license/checkout'
+    | '/v1/me/license/plan'
     | '/v1/me/license/renewal'
     | '/v1/me/license/users'
     | '/v1/mobile-auth/devices/$sessionId'
@@ -1933,6 +2041,7 @@ export interface FileRouteTypes {
     | '/v1/skills/$skillId/versions/$versionId'
     | '/v1/skills/admin/featured/$skillId'
     | '/v1/skills/admin/submissions/$versionId'
+    | '/v1/skills/admin/verified/$skillId'
     | '/v2/hosting/servers/$serverId/activity'
     | '/v2/hosting/servers/$serverId/checkout'
     | '/v2/hosting/servers/$serverId/lifecycle'
@@ -1970,11 +2079,16 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AppRoute: typeof AppRoute
   AppPreviewRoute: typeof AppPreviewRoute
+  BrandingRoute: typeof BrandingRoute
   ChangelogRoute: typeof ChangelogRoute
   CommercialLicenseRoute: typeof CommercialLicenseRoute
+  CommerciallicenseRoute: typeof CommerciallicenseRoute
   ContactRoute: typeof ContactRoute
+  DpaRoute: typeof DpaRoute
   JoinRoute: typeof JoinRoute
   LlmsDottxtRoute: typeof LlmsDottxtRoute
+  PricingRoute: typeof PricingRoute
+  PrivacyRoute: typeof PrivacyRoute
   PrivacyPolicyRoute: typeof PrivacyPolicyRoute
   ReportSiteRoute: typeof ReportSiteRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
@@ -2024,6 +2138,7 @@ export interface RootRouteChildren {
   V1MobileAuthRedeemRoute: typeof V1MobileAuthRedeemRoute
   V1MobileAuthSessionRoute: typeof V1MobileAuthSessionRoute
   V1MobileAuthTicketRoute: typeof V1MobileAuthTicketRoute
+  V1MobileChangelogRoute: typeof V1MobileChangelogRoute
   V1MobileFeaturesRoute: typeof V1MobileFeaturesRoute
   V1SitesSiteIdRoute: typeof V1SitesSiteIdRoute
   V1SitesReportsRoute: typeof V1SitesReportsRoute
@@ -2075,6 +2190,7 @@ export interface RootRouteChildren {
   V1SitesUploadsUploadIdActivateRoute: typeof V1SitesUploadsUploadIdActivateRoute
   V1SitesUploadsUploadIdFileRoute: typeof V1SitesUploadsUploadIdFileRoute
   V1SkillsAdminFeaturedSkillIdRoute: typeof V1SkillsAdminFeaturedSkillIdRoute
+  V1SkillsAdminVerifiedSkillIdRoute: typeof V1SkillsAdminVerifiedSkillIdRoute
   V2HostingServersServerIdActivityRoute: typeof V2HostingServersServerIdActivityRoute
   V2HostingServersServerIdCheckoutRoute: typeof V2HostingServersServerIdCheckoutRoute
   V2HostingServersServerIdLifecycleRoute: typeof V2HostingServersServerIdLifecycleRoute
@@ -2129,6 +2245,13 @@ declare module '@tanstack/solid-router' {
       preLoaderRoute: typeof AppPreviewRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/branding': {
+      id: '/branding'
+      path: '/branding'
+      fullPath: '/branding'
+      preLoaderRoute: typeof BrandingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/changelog': {
       id: '/changelog'
       path: '/changelog'
@@ -2143,11 +2266,25 @@ declare module '@tanstack/solid-router' {
       preLoaderRoute: typeof CommercialLicenseRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/commerciallicense': {
+      id: '/commerciallicense'
+      path: '/commerciallicense'
+      fullPath: '/commerciallicense'
+      preLoaderRoute: typeof CommerciallicenseRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/contact': {
       id: '/contact'
       path: '/contact'
       fullPath: '/contact'
       preLoaderRoute: typeof ContactRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/dpa': {
+      id: '/dpa'
+      path: '/dpa'
+      fullPath: '/dpa'
+      preLoaderRoute: typeof DpaRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/join': {
@@ -2162,6 +2299,20 @@ declare module '@tanstack/solid-router' {
       path: '/llms.txt'
       fullPath: '/llms.txt'
       preLoaderRoute: typeof LlmsDottxtRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/pricing': {
+      id: '/pricing'
+      path: '/pricing'
+      fullPath: '/pricing'
+      preLoaderRoute: typeof PricingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/privacy': {
+      id: '/privacy'
+      path: '/privacy'
+      fullPath: '/privacy'
+      preLoaderRoute: typeof PrivacyRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/privacy-policy': {
@@ -2479,6 +2630,13 @@ declare module '@tanstack/solid-router' {
       preLoaderRoute: typeof V1GithubInstallationTokensRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/v1/me/analytics': {
+      id: '/v1/me/analytics'
+      path: '/analytics'
+      fullPath: '/v1/me/analytics'
+      preLoaderRoute: typeof V1MeAnalyticsRouteImport
+      parentRoute: typeof V1MeRoute
+    }
     '/v1/me/avatar': {
       id: '/v1/me/avatar'
       path: '/avatar'
@@ -2526,6 +2684,13 @@ declare module '@tanstack/solid-router' {
       path: '/v1/mobile-auth/ticket'
       fullPath: '/v1/mobile-auth/ticket'
       preLoaderRoute: typeof V1MobileAuthTicketRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/v1/mobile/changelog': {
+      id: '/v1/mobile/changelog'
+      path: '/v1/mobile/changelog'
+      fullPath: '/v1/mobile/changelog'
+      preLoaderRoute: typeof V1MobileChangelogRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/v1/mobile/features': {
@@ -2750,6 +2915,13 @@ declare module '@tanstack/solid-router' {
       path: '/license/checkout'
       fullPath: '/v1/me/license/checkout'
       preLoaderRoute: typeof V1MeLicenseCheckoutRouteImport
+      parentRoute: typeof V1MeRoute
+    }
+    '/v1/me/license/plan': {
+      id: '/v1/me/license/plan'
+      path: '/license/plan'
+      fullPath: '/v1/me/license/plan'
+      preLoaderRoute: typeof V1MeLicensePlanRouteImport
       parentRoute: typeof V1MeRoute
     }
     '/v1/me/license/renewal': {
@@ -2990,6 +3162,13 @@ declare module '@tanstack/solid-router' {
       preLoaderRoute: typeof V1SkillsAdminSubmissionsVersionIdRouteImport
       parentRoute: typeof V1SkillsAdminSubmissionsRoute
     }
+    '/v1/skills/admin/verified/$skillId': {
+      id: '/v1/skills/admin/verified/$skillId'
+      path: '/v1/skills/admin/verified/$skillId'
+      fullPath: '/v1/skills/admin/verified/$skillId'
+      preLoaderRoute: typeof V1SkillsAdminVerifiedSkillIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/v2/hosting/servers/$serverId/': {
       id: '/v2/hosting/servers/$serverId/'
       path: '/v2/hosting/servers/$serverId'
@@ -3211,10 +3390,12 @@ declare module '@tanstack/solid-router' {
 }
 
 interface V1MeRouteChildren {
+  V1MeAnalyticsRoute: typeof V1MeAnalyticsRoute
   V1MeAvatarRoute: typeof V1MeAvatarRoute
   V1MeProfileRoute: typeof V1MeProfileRoute
   V1MeBillingPortalRoute: typeof V1MeBillingPortalRoute
   V1MeLicenseCheckoutRoute: typeof V1MeLicenseCheckoutRoute
+  V1MeLicensePlanRoute: typeof V1MeLicensePlanRoute
   V1MeLicenseRenewalRoute: typeof V1MeLicenseRenewalRoute
   V1MeLicenseUsersRoute: typeof V1MeLicenseUsersRoute
   V1MeBillingIndexRoute: typeof V1MeBillingIndexRoute
@@ -3222,10 +3403,12 @@ interface V1MeRouteChildren {
 }
 
 const V1MeRouteChildren: V1MeRouteChildren = {
+  V1MeAnalyticsRoute: V1MeAnalyticsRoute,
   V1MeAvatarRoute: V1MeAvatarRoute,
   V1MeProfileRoute: V1MeProfileRoute,
   V1MeBillingPortalRoute: V1MeBillingPortalRoute,
   V1MeLicenseCheckoutRoute: V1MeLicenseCheckoutRoute,
+  V1MeLicensePlanRoute: V1MeLicensePlanRoute,
   V1MeLicenseRenewalRoute: V1MeLicenseRenewalRoute,
   V1MeLicenseUsersRoute: V1MeLicenseUsersRoute,
   V1MeBillingIndexRoute: V1MeBillingIndexRoute,
@@ -3348,11 +3531,16 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AppRoute: AppRoute,
   AppPreviewRoute: AppPreviewRoute,
+  BrandingRoute: BrandingRoute,
   ChangelogRoute: ChangelogRoute,
   CommercialLicenseRoute: CommercialLicenseRoute,
+  CommerciallicenseRoute: CommerciallicenseRoute,
   ContactRoute: ContactRoute,
+  DpaRoute: DpaRoute,
   JoinRoute: JoinRoute,
   LlmsDottxtRoute: LlmsDottxtRoute,
+  PricingRoute: PricingRoute,
+  PrivacyRoute: PrivacyRoute,
   PrivacyPolicyRoute: PrivacyPolicyRoute,
   ReportSiteRoute: ReportSiteRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
@@ -3403,6 +3591,7 @@ const rootRouteChildren: RootRouteChildren = {
   V1MobileAuthRedeemRoute: V1MobileAuthRedeemRoute,
   V1MobileAuthSessionRoute: V1MobileAuthSessionRoute,
   V1MobileAuthTicketRoute: V1MobileAuthTicketRoute,
+  V1MobileChangelogRoute: V1MobileChangelogRoute,
   V1MobileFeaturesRoute: V1MobileFeaturesRoute,
   V1SitesSiteIdRoute: V1SitesSiteIdRoute,
   V1SitesReportsRoute: V1SitesReportsRoute,
@@ -3455,6 +3644,7 @@ const rootRouteChildren: RootRouteChildren = {
   V1SitesUploadsUploadIdActivateRoute: V1SitesUploadsUploadIdActivateRoute,
   V1SitesUploadsUploadIdFileRoute: V1SitesUploadsUploadIdFileRoute,
   V1SkillsAdminFeaturedSkillIdRoute: V1SkillsAdminFeaturedSkillIdRoute,
+  V1SkillsAdminVerifiedSkillIdRoute: V1SkillsAdminVerifiedSkillIdRoute,
   V2HostingServersServerIdActivityRoute: V2HostingServersServerIdActivityRoute,
   V2HostingServersServerIdCheckoutRoute: V2HostingServersServerIdCheckoutRoute,
   V2HostingServersServerIdLifecycleRoute:

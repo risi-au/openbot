@@ -8,6 +8,7 @@ import {
   type BubbleVariant,
   Button,
   ChevronRight,
+  CircleDot,
   ContextMenu,
   DropdownMenu,
   Info,
@@ -264,10 +265,12 @@ const textContent = (block: MessageContentBlock) => (block.type === "text" ? blo
 const imageFileKeys = (files: readonly MessageImageFile[]) =>
   files.map((file) => `${file.kind}:${file.path}`).join("\n");
 
+const fileImageId = (file: MessageImageFile) => `file:${file.kind}:${file.path}`;
+
 /** A named image file in the shape of an image attachment, so the gallery and the viewer show it. */
 function fileImage(file: MessageImageFile, url: string): AttachmentSummary {
   return {
-    id: `file:${file.kind}:${file.path}`,
+    id: fileImageId(file),
     name: fileReferenceName(file.path),
     size: 0,
     kind: "image",
@@ -311,6 +314,10 @@ export function MessageBody(props: {
    * image as a `data:` URL, or `null` when it cannot show. Absent, a named file is only a chip.
    */
   loadImageFile?: ((file: MessageImageFile) => Promise<string | null>) | undefined;
+  /** Downloads an image file that an agent message names. Absent, its preview has no download. */
+  onDownloadImageFile?: ((file: MessageImageFile) => void) | undefined;
+  /** The window draws the macOS window controls over the top start corner. The image viewer leaves room. */
+  macWindowControls?: boolean | undefined;
 }) {
   const { t } = useText();
   const streamingBody = createStreamingBody(
@@ -430,8 +437,13 @@ export function MessageBody(props: {
     content: () => messageContent,
     enabled: () => props.message.author === "agent" && streamingBody.smoothHeight(),
   });
-  // A markdown image is a web address, and a named image file is not an attachment, so the viewer
-  // has no download for them.
+  /* A named image file downloads by its path. A markdown image is a web address, so it has no download. */
+  const namedImageFile = (image: AttachmentSummary) => namedImageFiles().find((file) => fileImageId(file) === image.id);
+  const downloadImage = (image: AttachmentSummary) => {
+    const file = namedImageFile(image);
+    if (file) props.onDownloadImageFile?.(file);
+    else props.onDownload?.(image);
+  };
   const [lightbox, setLightbox] = createSignal<(ImageLightboxOpening & { markdown?: boolean }) | null>(null);
   const lightboxImages = createMemo(() => (props.message.attachments ?? []).filter(isLightboxImage));
   /* An image opens in the viewer with the other images of its message. A quoted message's image
@@ -688,6 +700,7 @@ export function MessageBody(props: {
                 aspectRatio="square"
                 attachment={image()}
                 onPreview={openAttachment}
+                onDownload={props.onDownloadImageFile ? downloadImage : undefined}
               />
             </div>
           )}
@@ -708,7 +721,13 @@ export function MessageBody(props: {
           <ImageLightbox
             opening={opening()}
             thumbnail={imageThumbnail}
-            onDownload={opening().markdown ? undefined : props.onDownload}
+            onDownload={downloadImage}
+            canDownload={(image) =>
+              namedImageFile(image)
+                ? Boolean(props.onDownloadImageFile)
+                : !opening().markdown && Boolean(props.onDownload)
+            }
+            macWindowControls={props.macWindowControls}
             onClose={() => setLightbox(null)}
           />
         )}
@@ -874,6 +893,8 @@ export function MessageMenu(props: {
   onReply?: (() => void) | undefined;
   onCopy: () => void;
   readAloud?: { reading: boolean; onToggle: () => void } | undefined;
+  /** Marks this message and the messages after it unread. Without it, the menu has no such item. */
+  onMarkUnread?: (() => void) | undefined;
 }) {
   const { t } = useText();
   const authorName = () => props.authorName ?? t("chat.message.agentFallback");
@@ -939,6 +960,17 @@ export function MessageMenu(props: {
             {readAloud().reading ? <StopIcon /> : <AudioLines aria-hidden="true" />}
             <span>{readAloud().reading ? t("chat.actions.stopReading") : t("chat.actions.readAloud")}</span>
           </ContextMenu.Item>
+        )}
+      </Show>
+      <Show when={props.onMarkUnread}>
+        {(onMarkUnread) => (
+          <>
+            <ContextMenu.Separator />
+            <ContextMenu.Item onSelect={onMarkUnread()}>
+              <CircleDot aria-hidden="true" />
+              <span>{t("chat.menu.markUnread")}</span>
+            </ContextMenu.Item>
+          </>
         )}
       </Show>
     </ContextMenu.Content>

@@ -48,6 +48,8 @@ const config: KnipConfig = {
     "osascript",
     // Makes the FIFO whose opens never finish in the exit watchdog E2E script.
     "mkfifo",
+    // Runs variant D of the manual browser tools bench, only when the developer installed it.
+    "browser-harness",
     // Reads the memory that programs can still use on macOS, for the machine part of Storage.
     "vm_stat",
   ],
@@ -101,18 +103,26 @@ const config: KnipConfig = {
         "src/shims/*.ts",
         // metro.config.js loads this stylesheet by path (`cssEntryFile`).
         "global.css",
+        // scripts/mobile-share-sender.ts builds the share extension page from this file by path.
+        "src/features/share/extension/share-sender.ts",
       ],
       project: ["src/**/*.{ts,tsx}", "plugins/**/*.{js,ts}"],
       ignoreDependencies: [
         // `expo` installs it; Expo config plugins import it by this name.
         "@expo/config-plugins",
+        // Expo CLI loads it as a dev tools plugin (the simulators in a browser tab); no code imports it.
+        "expo-device-hub",
+        // `expo` installs it too; plugins/with-share-target.js edits the extension's plist files with it.
+        "@expo/plist",
         // A native module that `expo-router` imports. The direct entry keeps its native version
         // pinned to the Expo SDK and visible to autolinking.
         "expo-symbols",
       ],
     },
-    // src/index.ts is a default entry of knip.
+    // src/index.ts is a default entry of knip. The capacity-report Compose service runs
+    // src/capacity-report.ts.
     "remote/api": {
+      entry: ["src/capacity-report.ts"],
       project: ["src/**/*.ts"],
     },
     "packages/i18n": {

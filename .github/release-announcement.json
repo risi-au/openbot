@@ -1,10 +1,10 @@
 {
-  "version": "0.52.1",
+  "version": "0.56.0",
   "highlights": [
-    "Keep API keys in the Vault: every agent on the server can use them, and the key never goes into the chat.",
-    "Remove the downloaded CLI of a provider that is off, in Settings > Providers, to free disk space.",
-    "Save a password that you type in the secure card to the Vault of a joined server.",
-    "Text that you do not send in a side thread now stays there after a turn ends or a restart.",
-    "OpenBot now quits fully when a file operation never finishes, and long Codex and Pi compactions run to the end."
+    "Agents do many browser actions in one step, so browser tasks finish sooner and use fewer tokens, and Cloudflare checks pass in the built-in browser.",
+    "Right-click an agent message and select Mark unread to come back to it later.",
+    "Hide the Local server when you have another server; its agents, chats and files stay on your computer.",
+    "Choose the sound that plays when a task finishes, in Settings › Notifications.",
+    "Each provider CLI now uses about half the disk space, and OpenBot uses the CLI you installed when it is as new as its own copy."
   ]
 }

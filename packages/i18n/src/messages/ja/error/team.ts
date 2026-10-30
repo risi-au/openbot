@@ -64,6 +64,8 @@ export const messages = {
   "error.team.sharedDataUnsupported": "この接続では共有データを利用できません。",
   "error.team.agentInstallUnsupported": "この接続ではエージェントを追加できません。",
   "error.team.agentHideUnsupported": "この接続ではエージェントを非表示にできません。",
+  "error.team.agentNotificationLevelsUnsupported":
+    "このサーバーはエージェントごとの通知レベルを保存できません。サーバーを実行しているコンピューターで OpenBot を更新してください。",
   "error.team.agentPublishUnsupported": "この接続ではエージェントを公開できません。",
   "error.team.agentUpdateUnsupported": "この接続ではエージェントを更新できません。",
   "error.team.contextResetUnsupported": "この接続では新しいチャットを始められません。",
@@ -89,6 +91,7 @@ export const messages = {
   "error.team.hostTimezoneUnsupported": "この接続はサーバーのタイムゾーンに対応していません。",
   "error.team.routineResultsUnsupported": "この接続はルーティンの送信先に対応していません。",
   "error.team.agentMemoryLimitUnsupported": "この接続はエージェントのメモリー上限に対応していません。",
+  "error.team.memoryReviewUnsupported": "この接続はメモリーの見直しに対応していません。",
   "error.team.promptCacheTtlUnsupported": "この接続はプロンプトキャッシュ時間に対応していません。",
   "error.team.providerDefaultUnsupported": "この接続はデフォルトのプロバイダーに対応していません。",
   "error.team.attachmentNameRequired": "安全な添付ファイル名が必要です。",

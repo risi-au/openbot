@@ -65,6 +65,8 @@ export const messages = {
   "error.team.sharedDataUnsupported": "Deze verbinding ondersteunt geen gedeelde gegevens.",
   "error.team.agentInstallUnsupported": "Deze verbinding ondersteunt het toevoegen van agents niet.",
   "error.team.agentHideUnsupported": "Deze verbinding ondersteunt het verbergen van agents niet.",
+  "error.team.agentNotificationLevelsUnsupported":
+    "Deze server kan geen eigen meldingsniveau per agent bewaren. Werk OpenBot bij op de computer waarop de server draait.",
   "error.team.agentPublishUnsupported": "Deze verbinding ondersteunt het publiceren van agents niet.",
   "error.team.agentUpdateUnsupported": "Deze verbinding ondersteunt het bijwerken van agents niet.",
   "error.team.contextResetUnsupported": "Deze verbinding ondersteunt het starten van een nieuwe chat niet.",
@@ -90,6 +92,7 @@ export const messages = {
   "error.team.hostTimezoneUnsupported": "Deze verbinding ondersteunt de tijdzone van de server niet.",
   "error.team.routineResultsUnsupported": "Deze verbinding ondersteunt geen bestemmingen voor routines.",
   "error.team.agentMemoryLimitUnsupported": "Deze verbinding ondersteunt de geheugenlimiet van agents niet.",
+  "error.team.memoryReviewUnsupported": "Deze verbinding ondersteunt de geheugencontrole niet.",
   "error.team.promptCacheTtlUnsupported": "Deze verbinding ondersteunt de cachetijd van prompts niet.",
   "error.team.providerDefaultUnsupported": "Deze verbinding ondersteunt de standaardaanbieder niet.",
   "error.team.agentAccessUnsupported": "Deze verbinding ondersteunt geen rollen.",

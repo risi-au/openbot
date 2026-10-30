@@ -47,6 +47,7 @@ import { ConversationQuestionPrompt } from "./ConversationQuestionPrompt";
 import { continuesSenderRun } from "./chat-grouping";
 import { isChatVisualAppShortcut } from "./chat-visual-shortcuts";
 import { chatVisualPageUrl } from "./chat-visual-url";
+import { isIncomingAgentMessage } from "./conversation-read-state";
 import { conversationRuntime } from "./conversation-runtime";
 import { useConversationViewScope } from "./conversation-scope";
 import { agentSkillsMode } from "./installed-skills-source";
@@ -122,6 +123,7 @@ export function ConversationTimeline() {
     composerHasContent,
     copiedMessageId,
     dismissPendingSend,
+    downloadMessageImageFile,
     editingDeliveryId,
     editPendingSend,
     copyMessage,
@@ -170,6 +172,7 @@ export function ConversationTimeline() {
     setExpandedEmojiMessageId,
     setOpenReactionMessageId,
     setRequiredInteractionElement,
+    registerPromptComposerAnswer,
     showScrollToLatest,
     unreadDividerVisible,
     updateScrollFade,
@@ -180,6 +183,7 @@ export function ConversationTimeline() {
     setStickToLatest,
     followReaderScroll,
     setUnreadMessagesDividerElement,
+    unreadDividerArrives,
     setVirtualRootElement,
     shownSubagentId,
     toggleSubagentPanel,
@@ -202,6 +206,12 @@ export function ConversationTimeline() {
       onToggle: () =>
         toggleReadAloud({ serverId: props.server?.id ?? "local", agentId, messageId: message.id }, message.body),
     };
+  };
+  /** A message that counts as unread in an agent chat can be marked unread, with the messages after it. */
+  const markUnreadAction = (message: AgentMessage) => {
+    const onMarkUnread = props.onMarkUnread;
+    if (channel || !onMarkUnread || !isIncomingAgentMessage(message) || message.streaming) return;
+    return () => void onMarkUnread(message.id);
   };
   /** The last agent text of each turn the user spoke: it shows a play control at all times. */
   const spokenReplyIds = createMemo(() => {
@@ -359,6 +369,7 @@ export function ConversationTimeline() {
             onPreview={(attachment) => void previewAttachment(attachment)}
             onAttachmentAction={attachmentAction}
             onOpenQuote={openQuote}
+            macWindowControls={props.platform === "darwin"}
           />
         )}
       </Show>
@@ -751,6 +762,7 @@ export function ConversationTimeline() {
                       </Show>
                       <Show when={message()?.id === unreadBoundaryMessageId()}>
                         <UnreadMessagesDivider
+                          animateIn={unreadDividerArrives}
                           elementRef={(element) => {
                             setUnreadMessagesDividerElement(element);
                             scheduleUnreadDividerVisibilityUpdate();
@@ -916,6 +928,7 @@ export function ConversationTimeline() {
                       </Show>
                       <Show when={message()?.id === unreadBoundaryMessageId()}>
                         <UnreadMessagesDivider
+                          animateIn={unreadDividerArrives}
                           elementRef={(element) => {
                             setUnreadMessagesDividerElement(element);
                             scheduleUnreadDividerVisibilityUpdate();
@@ -967,6 +980,7 @@ export function ConversationTimeline() {
                       </Show>
                       <Show when={message()?.id === unreadBoundaryMessageId()}>
                         <UnreadMessagesDivider
+                          animateIn={unreadDividerArrives}
                           elementRef={(element) => {
                             setUnreadMessagesDividerElement(element);
                             scheduleUnreadDividerVisibilityUpdate();
@@ -1007,6 +1021,7 @@ export function ConversationTimeline() {
                     >
                       <Show when={message()?.id === unreadBoundaryMessageId()}>
                         <UnreadMessagesDivider
+                          animateIn={unreadDividerArrives}
                           elementRef={(element) => {
                             setUnreadMessagesDividerElement(element);
                             scheduleUnreadDividerVisibilityUpdate();
@@ -1070,6 +1085,7 @@ export function ConversationTimeline() {
                       </Show>
                       <Show when={message()?.id === unreadBoundaryMessageId()}>
                         <UnreadMessagesDivider
+                          animateIn={unreadDividerArrives}
                           elementRef={(element) => {
                             setUnreadMessagesDividerElement(element);
                             scheduleUnreadDividerVisibilityUpdate();
@@ -1092,6 +1108,7 @@ export function ConversationTimeline() {
                             onMessage={addPageText}
                             onContext={(text) => setPageContext(message() ?? initialMessage, text)}
                             isAppShortcut={isChatVisualAppShortcut}
+                            macWindowControls={props.platform === "darwin"}
                           />
                         </article>
                       </ChatRowBoundary>
@@ -1152,6 +1169,7 @@ export function ConversationTimeline() {
                     </Show>
                     <Show when={message()?.id === unreadBoundaryMessageId()}>
                       <UnreadMessagesDivider
+                        animateIn={unreadDividerArrives}
                         elementRef={(element) => {
                           setUnreadMessagesDividerElement(element);
                           scheduleUnreadDividerVisibilityUpdate();
@@ -1211,6 +1229,7 @@ export function ConversationTimeline() {
                             onOpenQuote={openQuote}
                             onDownload={(attachment) => attachmentAction(attachment, "download")}
                             mediaSource={runtime.attachmentMedia}
+                            macWindowControls={props.platform === "darwin"}
                             loadImageFile={
                               loadImageFile &&
                               ((file) =>
@@ -1219,6 +1238,9 @@ export function ConversationTimeline() {
                                   messageId: message()?.id ?? initialMessage.id,
                                   agentId: workspaceAgentId(),
                                 }))
+                            }
+                            onDownloadImageFile={
+                              loadImageFile && ((file) => downloadMessageImageFile(file, workspaceAgentId()))
                             }
                             actions={
                               <>
@@ -1280,6 +1302,7 @@ export function ConversationTimeline() {
                                       authorName={channel ? author().name : undefined}
                                       {...messageActions}
                                       readAloud={messageReadAloud()}
+                                      onMarkUnread={markUnreadAction(message() ?? initialMessage)}
                                     />
                                   )
                             }
@@ -1379,7 +1402,10 @@ export function ConversationTimeline() {
             </div>
             {/* Under an open side thread, the thread draws the card of its own question. */}
             <Show when={!sideThreadOpen()}>
-              <ConversationQuestionPrompt elementRef={setRequiredInteractionElement} />
+              <ConversationQuestionPrompt
+                elementRef={setRequiredInteractionElement}
+                registerComposerAnswer={registerPromptComposerAnswer}
+              />
             </Show>
             <Show keyed when={props.approval}>
               {(approval) => (

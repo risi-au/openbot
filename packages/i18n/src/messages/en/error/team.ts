@@ -63,6 +63,8 @@ export const messages = defineMessages("error.team", {
   "error.team.sharedDataUnsupported": "Shared data is not supported by this connection.",
   "error.team.agentInstallUnsupported": "Adding agents is not supported by this connection.",
   "error.team.agentHideUnsupported": "Hiding agents is not supported by this connection.",
+  "error.team.agentNotificationLevelsUnsupported":
+    "This server cannot keep your own notification level for each agent. Update OpenBot on the computer that runs it.",
   "error.team.agentPublishUnsupported": "Publishing agents is not supported by this connection.",
   "error.team.agentUpdateUnsupported": "Updating agents is not supported by this connection.",
   "error.team.contextResetUnsupported": "Starting a new chat is not supported by this connection.",
@@ -88,6 +90,7 @@ export const messages = defineMessages("error.team", {
   "error.team.hostTimezoneUnsupported": "The server timezone is not supported by this connection.",
   "error.team.routineResultsUnsupported": "Routine destinations are not supported by this connection.",
   "error.team.agentMemoryLimitUnsupported": "The agent memory limit is not supported by this connection.",
+  "error.team.memoryReviewUnsupported": "The memory review is not supported by this connection.",
   "error.team.promptCacheTtlUnsupported": "The prompt cache time is not supported by this connection.",
   "error.team.providerDefaultUnsupported": "The default provider is not supported by this connection.",
   "error.team.agentAccessUnsupported": "Roles are not supported by this connection.",

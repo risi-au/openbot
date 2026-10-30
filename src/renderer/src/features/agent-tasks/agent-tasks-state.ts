@@ -1,7 +1,7 @@
 import type { AgentEvent, AgentTask, AgentTasksSnapshot, ConversationSnapshot } from "@openbot/contracts/ipc";
 import type { AppTextKey } from "@openbot/i18n";
 import { currentText } from "@openbot/ui/text";
-import { createEffect, createStore } from "solid-js";
+import { createEffect, createStore, untrack } from "solid-js";
 import { actionToast } from "../../action-toast";
 import { createScopeGuard } from "../../scope-lifetime";
 import type { AgentTasksPort } from "./agent-tasks-port";
@@ -37,7 +37,12 @@ export interface AgentTasksOptions {
   available: () => boolean;
   /** The server renames and deletes side threads: the `agent-threads-v1` routes. */
   editable: () => boolean;
-  /** A change of this value reads the active agent's list again, for example when the agent starts again. */
+  /** The server keeps the person's read mark of each side thread: the `agent-thread-reads-v1` routes. */
+  readable: () => boolean;
+  /**
+   * A change of this value reads the lists of the active agent and of each agent with a running thread
+   * again, for example when the agent starts again.
+   */
   reloadKey: () => unknown;
 }
 
@@ -48,11 +53,13 @@ export interface AgentTasksOptions {
  * server: a reply that arrives after that owner ends changes nothing.
  */
 export function createAgentTasks(options: AgentTasksOptions) {
-  const { port, activeAgentId, local, available, editable } = options;
+  const { port, activeAgentId, local, available, editable, readable } = options;
   const scopeIsCurrent = createScopeGuard();
   const [state, setState] = createStore<AgentTasksState>({ snapshots: {}, conversations: {} });
   const listRequests = new Map<string, number>();
   const readRequests = new Map<string, number>();
+  /** The message that each thread's read mark last moved to, so a redraw does not send the same mark again. */
+  const readMarks = new Map<string, string>();
 
   /** Stores a thread list. A conversation of a thread that the list no longer has goes with it. */
   function setSnapshot(snapshot: AgentTasksSnapshot): void {
@@ -130,9 +137,20 @@ export function createAgentTasks(options: AgentTasksOptions) {
   }
 
   createEffect(
-    () => ({ agentId: activeAgentId(), reload: options.reloadKey(), shown: available() }),
-    ({ agentId, shown }) => {
-      if (agentId && shown) void loadTasks(agentId);
+    () => ({
+      agentId: activeAgentId(),
+      reload: options.reloadKey(),
+      shown: available(),
+      // A running thread can end while the server is away, and the sidebar shows its agent as working.
+      running: untrack(() =>
+        Object.values(state.snapshots).flatMap((snapshot) =>
+          snapshot.tasks.some((task) => task.state === "running") ? [snapshot.agentId] : [],
+        ),
+      ),
+    }),
+    ({ agentId, shown, running }) => {
+      if (!shown) return;
+      for (const id of new Set([...(agentId ? [agentId] : []), ...running])) void loadTasks(id);
     },
   );
 
@@ -267,6 +285,21 @@ export function createAgentTasks(options: AgentTasksOptions) {
   }
 
   /**
+   * Moves the person's read mark of a side thread to the message that they see. The member's other
+   * devices read the mark, so the phone no longer shows the thread as unread. A failure keeps the
+   * old mark: the next message moves it.
+   */
+  function markTaskRead(agentId: string, taskId: string, throughMessageId: string): void {
+    if (!readable() || readMarks.get(taskId) === throughMessageId) return;
+    readMarks.set(taskId, throughMessageId);
+    void port()
+      .markTaskRead({ agentId, taskId, throughMessageId })
+      .catch(() => {
+        if (readMarks.get(taskId) === throughMessageId) readMarks.delete(taskId);
+      });
+  }
+
+  /**
    * Reads the active agent's list and each loaded conversation again, after the server was away. The
    * lists come first: a thread that another device deleted meanwhile is not read again.
    */
@@ -303,6 +336,7 @@ export function createAgentTasks(options: AgentTasksOptions) {
     reopenTask,
     renameTask,
     deleteTask,
+    markTaskRead,
   };
 }
 

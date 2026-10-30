@@ -7,10 +7,12 @@ import {
   AGENT_MEMORY_SELECTION_PAGE_ROUTE,
 } from "@openbot/contracts/team-protocol/agent-memories-v1";
 import { AGENT_MEMORY_LIMIT_ROUTES } from "@openbot/contracts/team-protocol/agent-memory-limit-v1";
+import { AGENT_NOTIFICATION_LEVELS_ROUTES } from "@openbot/contracts/team-protocol/agent-notification-levels-v1";
 import { AGENT_PUBLISH_ROUTES } from "@openbot/contracts/team-protocol/agent-publish-v1";
 import { AGENT_TASK_LIMIT_ROUTES } from "@openbot/contracts/team-protocol/agent-task-limit-v1";
 import { BROWSER_PROFILES_ROUTES } from "@openbot/contracts/team-protocol/browser-profiles-v1";
 import { CHANNEL_ROUTES } from "@openbot/contracts/team-protocol/channels-v1";
+import { CUSTOM_PROVIDER_HARNESS_ROUTES } from "@openbot/contracts/team-protocol/custom-provider-harness-v1";
 import { DISCORD_ACCESS_ROUTES } from "@openbot/contracts/team-protocol/discord-access-v1";
 import { FOCUS_USE_ROUTES } from "@openbot/contracts/team-protocol/focus-use-v1";
 import { HOST_MEMBER_UPDATE_ROUTES } from "@openbot/contracts/team-protocol/host-member-update-v1";
@@ -20,6 +22,7 @@ import { HOST_UPDATE_ROUTES } from "@openbot/contracts/team-protocol/host-update
 import { HOSTED_SITES_ROUTES } from "@openbot/contracts/team-protocol/hosted-sites-v1";
 import { LIVE_ACTIVITY_PUSH_ROUTES } from "@openbot/contracts/team-protocol/live-activity-push-v1";
 import { MACHINE_RESOURCES_ROUTES } from "@openbot/contracts/team-protocol/machine-resources-v1";
+import { MEMORY_REVIEW_ROUTES } from "@openbot/contracts/team-protocol/memory-review-v1";
 import { PROMPT_CACHE_TTL_ROUTES } from "@openbot/contracts/team-protocol/prompt-cache-ttl-v1";
 import { PROVIDER_DEFAULT_ROUTES } from "@openbot/contracts/team-protocol/provider-default-v1";
 import { PROVIDERS_ADMIN_ROUTES } from "@openbot/contracts/team-protocol/providers-v1";
@@ -55,11 +58,13 @@ const PASSIVE_ROUTES: ReadonlySet<string> = new Set([
   HOST_MEMBER_UPDATE_ROUTES.status,
   HOST_TIMEZONE_ROUTES.settings,
   AGENT_MEMORY_LIMIT_ROUTES.settings,
+  MEMORY_REVIEW_ROUTES.settings,
   PROMPT_CACHE_TTL_ROUTES.settings,
   PROVIDER_DEFAULT_ROUTES.settings,
   DISCORD_ACCESS_ROUTES.access,
   LIVE_ACTIVITY_PUSH_ROUTES.register,
   LIVE_ACTIVITY_PUSH_ROUTES.remove,
+  AGENT_NOTIFICATION_LEVELS_ROUTES.read,
   PUSH_NOTIFICATIONS_ROUTES.register,
   PUSH_NOTIFICATIONS_ROUTES.remove,
   ANDROID_PUSH_NOTIFICATIONS_ROUTES.register,
@@ -85,6 +90,7 @@ const PASSIVE_ROUTES: ReadonlySet<string> = new Set([
   HOSTED_SITES_ROUTES.list,
   PROVIDERS_ADMIN_ROUTES.apiKeyState,
   PROVIDERS_ADMIN_ROUTES.customList,
+  CUSTOM_PROVIDER_HARNESS_ROUTES.customList,
   PROVIDERS_ADMIN_ROUTES.runtimesStatus,
   PROVIDERS_RUNTIMES_V2_ROUTES.runtimesStatus,
   // A focused app counts as use only for a limited time: `TeamApiServer` records it on its own.

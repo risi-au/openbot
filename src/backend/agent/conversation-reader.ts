@@ -117,6 +117,21 @@ export class ConversationReader {
     this.#reads.adoptMemberState(sourceMemberId, targetMemberId);
   }
 
+  /** The member's read mark of a side thread, by the thread's own id. */
+  readThread(memberId: string, threadId: string, options: ConversationMarkerExclusions = {}) {
+    return this.#reads.readStateForThread(memberId, threadId, options);
+  }
+
+  /** Moves the member's read mark of a side thread. The mark never moves back. */
+  markThreadRead(
+    memberId: string,
+    threadId: string,
+    throughMessageId: string,
+    options: ConversationMarkerExclusions = {},
+  ) {
+    return this.#reads.markReadForThread(memberId, threadId, throughMessageId, options);
+  }
+
   readonly markRead = Effect.fn("ConversationReader.markRead")(function* (
     this: ConversationReader,
     agentId: string,
@@ -145,10 +160,11 @@ export class ConversationReader {
     this: ConversationReader,
     agentId: string,
     memberId: string,
+    fromMessageId: string | null = null,
   ) {
     const agent = yield* this.#store.existing(agentId).pipe(toConversationReadFailed);
     return yield* readerStep(() => {
-      const state = this.#reads.markUnreadForThread(memberId, agent.threadId);
+      const state = this.#reads.markUnreadForThread(memberId, agent.threadId, fromMessageId);
       this.#hooks.emit({
         type: "conversation-invalidated",
         agentId,

@@ -38,7 +38,9 @@ import {
   isRoutineSchedule,
   type ListChannelRoutineRunsInput,
   type ListRoutineRunsInput,
+  type MarkAgentTaskReadInput,
   type MarkConversationReadInput,
+  type MarkConversationUnreadInput,
   type OpenAttachmentInput,
   type OpenMessageLinkInput,
   type OpenSharedFileInput,
@@ -580,6 +582,12 @@ export function parseRenameAgentTask(value: unknown): RenameAgentTaskInput {
   return { ...task, title };
 }
 
+export function parseMarkAgentTaskRead(value: unknown): MarkAgentTaskReadInput {
+  const task = parseAgentTask(value);
+  if (!isObject(value)) throw new Error("Invalid task request.");
+  return { ...task, throughMessageId: requireString(value.throughMessageId, "throughMessageId") };
+}
+
 export function parseMessageReaction(value: unknown): SetMessageReactionInput {
   if (!isObject(value)) throw new Error("Invalid message reaction request.");
   const emoji = value.emoji;
@@ -603,6 +611,14 @@ export function parseMarkConversationRead(value: unknown): MarkConversationReadI
     agentId: requireString(value.agentId, "agentId", INPUT_LIMITS.identifier),
     throughMessageId:
       throughMessageId === null ? null : requireString(throughMessageId, "throughMessageId", INPUT_LIMITS.identifier),
+  };
+}
+
+export function parseMarkConversationUnread(value: unknown): MarkConversationUnreadInput {
+  if (!isObject(value)) throw new Error("Invalid conversation unread request.");
+  return {
+    agentId: requireString(value.agentId, "agentId", INPUT_LIMITS.identifier),
+    fromMessageId: requireString(value.fromMessageId, "fromMessageId", INPUT_LIMITS.identifier),
   };
 }
 

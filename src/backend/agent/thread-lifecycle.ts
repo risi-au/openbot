@@ -69,7 +69,14 @@ import { isProviderTimeout } from "./provider-status";
 import { sessionSettingsIdentity } from "./session-settings";
 import { isArchivedThreadError, isMissingProviderSessionError, providerLabel } from "./thread-items";
 import { VISIBLE_DYNAMIC_TOOLS } from "./tool-catalog";
-import { codexSandboxConfig, codexSandboxMode, workspaceWritableRoots } from "./workspace-sandbox";
+import {
+  checkAgentFolders,
+  codexSandboxConfig,
+  codexSandboxMode,
+  existingAgentFolders,
+  workspaceExcludedFolders,
+  workspaceWritableRoots,
+} from "./workspace-sandbox";
 
 const logger = createOpenBotLogger("thread-lifecycle");
 
@@ -84,11 +91,12 @@ const logger = createOpenBotLogger("thread-lifecycle");
  * server names in the form Codex accepts. Version 7 keeps approvals for custom MCP servers. Version 8
  * is the MCP namespaces in `features.code_mode.direct_only_tool_namespaces`: Codex 0.164 does not
  * add them on resume to a thread started without them, so a code-mode-only model saw no MCP tools.
- * Version 9 adds `image_gen` to those namespaces. Version 10 refreshes the instructions that allow
- * requested desktop browser access, 11 adds the background agent-seat instructions, 12 selects the
- * Hypruse instructions, and 13 removes its workspace limit.
+ * Version 9 adds `image_gen` to those namespaces. Version 10 gives a stdio server its working
+ * directory as `cwd`; before, Codex did not get such a server. Version 11 refreshes the instructions
+ * that allow requested desktop browser access, 12 adds the background agent-seat instructions, 13
+ * selects the Hypruse instructions, and 14 removes its workspace limit.
  */
-const CODEX_MCP_ADAPTER_VERSION = 13;
+const CODEX_MCP_ADAPTER_VERSION = 14;
 
 /** What a provider other than Codex, or a Codex with no file to read, has in its own files. */
 const NO_CODEX_OWN_SERVERS: CodexOwnServers = { disabled: {}, transports: {} };
@@ -558,6 +566,7 @@ export class ThreadLifecycle {
     publicThreadId: string,
   ) {
     const agent = this.#sessionAgent(owner, publicThreadId);
+    yield* checkAgentFolders(agent);
     // One reading of the MCP set for the request and for the manifest below. Read twice, a change
     // that lands while the provider answers would be recorded as what this session was given, and
     // `hasCurrentTools` would then accept a session that never got it.
@@ -585,6 +594,7 @@ export class ThreadLifecycle {
       sandbox: codexSandboxMode(agent),
       ...this.#workspaceOnlyParam(agent, client),
       ...this.#computerUseParam(agent, client),
+      ...this.#mcpAgentParam(agent, client),
       ...this.#instructions(
         agent,
         client,
@@ -592,6 +602,7 @@ export class ThreadLifecycle {
         this.#computerUseInOwnChat(owner, publicThreadId),
         yield* this.#homeSkills(agent, client),
         this.#conversation.isTaskThread(publicThreadId),
+        mcpServers,
       ),
       serviceName: "openbot",
       dynamicTools: VISIBLE_DYNAMIC_TOOLS,
@@ -775,7 +786,9 @@ export class ThreadLifecycle {
     ThreadOperationFailed
   > {
     if (client.provider !== "codex") return {};
-    const usable = yield* usableMcpServers(configs, toolRuntimes, this.#mcpEndpoint).pipe(toThreadOperationFailed);
+    const usable = yield* usableMcpServers(configs, toolRuntimes, this.#mcpEndpoint, agent.id).pipe(
+      toThreadOperationFailed,
+    );
     const { servers, dropped } = yield* threadStep(() => codexMcpServers(usable, own.transports));
     this.#hooks.reportMcpDrops(client.provider, dropped);
     const mcpServers = codexThreadMcpServers(own.disabled, servers);
@@ -890,6 +903,8 @@ export class ThreadLifecycle {
     section: SectionTeammates | null,
     proxy: string | null,
   ): string {
+    const folders = existingAgentFolders(agent);
+    const excluded = workspaceExcludedFolders(agent);
     return createHash("sha256")
       .update(
         JSON.stringify([
@@ -900,14 +915,17 @@ export class ThreadLifecycle {
           approvals,
           [toolRuntimes.binDirectories, toolRuntimes.commandAliases],
           CODEX_MCP_ADAPTER_VERSION,
-          // Only a sandboxed agent, one that allows local scripts, or one that shows its plan adds a
-          // value: Codex keeps the developer instructions of a loaded session, and other sessions keep
+          // Only a sandboxed agent, one with added folders, one that allows local scripts, or one that
+          // shows its plan adds a value: Codex keeps the developer instructions of a loaded session, and other sessions keep
           // the fingerprint they had.
           [
             agent.name,
             agent.title,
             agent.description,
             ...(workspaceAccessEnforced(agent) ? ["workspace"] : []),
+            // The folders that the instructions name: a drive that is ejected or connected changes them.
+            ...(folders.length ? [["folders", ...folders]] : []),
+            ...(excluded.length ? [["excluded", ...excluded]] : []),
             ...(agentAutomationAllowed(agent, this.#store.agentDefaults()) ? ["automation"] : []),
             ...(agentQuickAcknowledgementEnabled(agent, this.#store.agentDefaults()) ? ["quick-acknowledgement"] : []),
           ],
@@ -969,16 +987,27 @@ export class ThreadLifecycle {
    * A `tool-sandbox` provider (Claude) applies its own Workspace only sandbox, so it is told directly.
    * Codex reads `sandbox`, and `ProviderRuntime` confines a `confined-process` provider.
    */
-  #workspaceOnlyParam(agent: AgentSummary, client: AgentClient): { workspaceOnly?: true } {
-    return agentProviderDescriptor(client.provider).workspaceEnforcement === "tool-sandbox" &&
-      workspaceAccessEnforced(agent)
-      ? { workspaceOnly: true }
-      : {};
+  #workspaceOnlyParam(agent: AgentSummary, client: AgentClient): { workspaceOnly?: true; excludedFolders?: string[] } {
+    if (
+      agentProviderDescriptor(client.provider).workspaceEnforcement !== "tool-sandbox" ||
+      !workspaceAccessEnforced(agent)
+    )
+      return {};
+    const excluded = workspaceExcludedFolders(agent);
+    return { workspaceOnly: true, ...(excluded.length ? { excludedFolders: excluded } : {}) };
   }
 
   /** Claude and the ACP clients read the servers themselves, so they are told to leave Computer Use out. */
   #computerUseParam(agent: AgentSummary, client: AgentClient): { computerUse?: false } {
     return client.provider === "codex" || agentComputerUseEnabled(agent) ? {} : { computerUse: false };
+  }
+
+  /**
+   * The agent, for Claude and the ACP clients, which read the servers themselves. Codex gets its
+   * servers from `codexConfigEffect` and takes the params as they are, so it is told nothing.
+   */
+  #mcpAgentParam(agent: AgentSummary, client: AgentClient): { openbotAgentId?: string } {
+    return client.provider === "codex" ? {} : { openbotAgentId: agent.id };
   }
 
   private readonly hasCurrentToolsEffect = Effect.fn("ThreadLifecycle.hasCurrentTools")(function* (
@@ -992,6 +1021,7 @@ export class ThreadLifecycle {
       if (missingSessionFile(stored.failure.cause)) return false;
       return yield* stored.failure;
     }
+    yield* checkAgentFolders(agent);
     const configs = this.#agentMcpServers(agent);
     const toolRuntimes = this.#toolRuntimes();
     const own = yield* this.codexOwnServersEffect(client, configs, toolRuntimes);
@@ -1033,6 +1063,7 @@ export class ThreadLifecycle {
     computerUseInOwnChat = false,
     homeSkills: readonly HomeSkill[] = [],
     sideThread = false,
+    mcpServers: readonly McpServerConfig[],
   ): DynamicRecord {
     const memories = this.#memories.essentialFor(agent.id);
     const options: DeveloperInstructionOptions = {
@@ -1048,6 +1079,7 @@ export class ThreadLifecycle {
       teammatesInTurns: client.provider === "claude",
       sectionTeammates: section,
       homeSkills,
+      httpMcpServers: mcpServers.some((config) => config.transport === "http"),
     };
     const instructions = developerInstructions(
       agent,
@@ -1094,6 +1126,7 @@ export class ThreadLifecycle {
     const publicThreadId = this.#conversation.publicThreadId(owner.id, externalThreadId);
     const computerUseInOwnChat = this.#computerUseInOwnChat(owner, publicThreadId);
     const agent = this.#sessionAgent(owner, publicThreadId);
+    yield* checkAgentFolders(agent);
     const configs = this.#agentMcpServers(agent);
     const toolRuntimes = this.#toolRuntimes();
     return {
@@ -1106,6 +1139,7 @@ export class ThreadLifecycle {
       sandbox: codexSandboxMode(agent),
       ...this.#workspaceOnlyParam(agent, client),
       ...this.#computerUseParam(agent, client),
+      ...this.#mcpAgentParam(agent, client),
       ...this.#instructions(
         agent,
         client,
@@ -1113,6 +1147,7 @@ export class ThreadLifecycle {
         computerUseInOwnChat,
         yield* this.#homeSkills(agent, client),
         this.#conversation.isTaskThread(publicThreadId),
+        configs,
       ),
       ...(client.provider === "codex" ? {} : { dynamicTools: VISIBLE_DYNAMIC_TOOLS }),
       ...(yield* this.codexConfigEffect(

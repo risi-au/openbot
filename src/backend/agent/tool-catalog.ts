@@ -34,6 +34,8 @@ const DIRECT_NAMES = new Set([
   "request_api_key",
 ]);
 
+const BROWSER_SCRIPT_TOOL = requireTool(`${OPENBOT_BROWSER_NAMESPACE}.run_script`);
+
 // Names keep the complete, stable catalog below 4,000 characters without schema duplication.
 const INITIAL_TOOL_CATALOG = BUILTIN_TOOL_CATALOG.map((tool) => tool.name).join(", ");
 const qualifiedName = z.string().trim().min(1).max(160);
@@ -44,14 +46,17 @@ const searchShape = {
   query: searchQuery.optional(),
   limit: z.number().int().min(1).max(10).optional(),
 };
-const describeShape = { names: z.array(qualifiedName).min(1).max(10) };
+// Models often send one name, and a rejected call costs a model step, so describe accepts `name` as well as `names`.
+const describeShape = { names: z.array(qualifiedName).min(1).max(10).optional(), name: qualifiedName.optional() };
 // Claude's bundled schema converter does not support the current Zod record processor, and Muse
 // rejects recursive schemas. Arguments arrive as JSON, and the target tool validates them.
 const callShape = { name: qualifiedName, arguments: z.object({}).catchall(z.unknown()) };
 const searchSchema = z
   .strictObject(searchShape)
   .refine((input) => input.queries !== undefined || input.query !== undefined);
-const describeSchema = z.strictObject(describeShape);
+const describeSchema = z
+  .strictObject(describeShape)
+  .refine((input) => input.names !== undefined || input.name !== undefined);
 const callSchema = z.strictObject(callShape);
 
 export const VISIBLE_TOOL_DEFINITIONS = [
@@ -63,7 +68,7 @@ export const VISIBLE_TOOL_DEFINITIONS = [
   },
   {
     name: "tool_describe",
-    description: "Load exact input schemas and operating guidance for up to ten qualified built-in tool names.",
+    description: "Load schemas and guidance for up to ten qualified tool names. Pass names, or one name.",
     shape: describeShape,
   },
   {
@@ -78,8 +83,7 @@ export const VISIBLE_DYNAMIC_TOOLS = [
   {
     type: "namespace" as const,
     name: "openbot",
-    description:
-      "OpenBot tools. Search, then call other built-in and browser capabilities. Describe a result that has no inputSchema.",
+    description: "OpenBot tools. Search, then call other built-in and browser tools.",
     tools: VISIBLE_TOOL_DEFINITIONS.map((definition) => ({
       type: "function" as const,
       name: definition.name,
@@ -110,7 +114,7 @@ const BROWSER_SEARCH_NOTE =
 function words(text: string): string[] {
   return text
     .toLowerCase()
-    .split(/[^a-z0-9]+/)
+    .split(/[^\p{L}\p{N}]+/u)
     .filter(Boolean);
 }
 
@@ -132,18 +136,35 @@ export function resolveDeferredTool(params: DynamicToolCallParams): DynamicToolC
   return { ...params, namespace: entry.namespace, tool: entry.tool, arguments: parsed.data.arguments };
 }
 
+/** The lowercase queries of a tool search and their words, or `null` for invalid arguments. */
+function searchTerms(params: DynamicToolCallParams) {
+  const parsed = searchSchema.safeParse(params.arguments);
+  if (!parsed.success) return null;
+  const queries = [...(parsed.data.queries ?? []), ...(parsed.data.query ? [parsed.data.query] : [])].map((query) =>
+    query.toLowerCase(),
+  );
+  return { queries, terms: new Set(queries.flatMap(words)), limit: parsed.data.limit };
+}
+
+/** The names that a tool search names with each of their words, such as an MCP server's name. */
+export function namesInSearch(params: DynamicToolCallParams, names: readonly string[]): string[] {
+  const search = params.tool === "tool_search" ? searchTerms(params) : null;
+  if (!search) return [];
+  return names.filter((name) => {
+    const nameWords = words(name);
+    return nameWords.length > 0 && nameWords.every((word) => search.terms.has(word));
+  });
+}
+
 function toolGuidanceFor(entries: readonly (typeof BUILTIN_TOOL_CATALOG)[number][]): string[] {
-  return [...new Set(entries.map((entry) => toolGuidance(entry.namespace, entry.tool)))].filter(Boolean);
+  return [...new Set(entries.flatMap((entry) => toolGuidance(entry.namespace, entry.tool)))];
 }
 
 export function discoverTools(params: DynamicToolCallParams) {
   if (params.tool === "tool_search") {
-    const parsed = searchSchema.safeParse(params.arguments);
-    if (!parsed.success) throw new Error(sourceText("error.agent.toolRequestInvalid"));
-    const queries = [...(parsed.data.queries ?? []), ...(parsed.data.query ? [parsed.data.query] : [])].map((query) =>
-      query.toLowerCase(),
-    );
-    const terms = new Set(queries.flatMap(words));
+    const search = searchTerms(params);
+    if (!search) throw new Error(sourceText("error.agent.toolRequestInvalid"));
+    const { queries, terms } = search;
     const matches = BUILTIN_TOOL_CATALOG.map((entry, index) => {
       const nameWords = new Set(words(entry.name));
       const descriptionWords = new Set(words(entry.description));
@@ -159,13 +180,20 @@ export function discoverTools(params: DynamicToolCallParams) {
     })
       .filter((result) => result.exact || result.score > 0)
       .sort((a, b) => Number(b.exact) - Number(a.exact) || b.score - a.score || a.index - b.index);
-    const found = matches.slice(0, parsed.data.limit ?? 5);
+    const found = matches.slice(0, search.limit ?? 5).map(({ entry, strong }) => ({ entry, strong }));
     const ready = new Set(
       found
         .filter((result) => result.strong)
         .slice(0, READY_SEARCH_RESULTS)
         .map(({ entry }) => entry),
     );
+    // Agents search for the single actions that they know, such as click and navigate, and then use
+    // one model turn per action. A browser result therefore always brings the multi-step tool.
+    if ([...ready].some((entry) => entry.namespace === OPENBOT_BROWSER_NAMESPACE)) {
+      if (!found.some(({ entry }) => entry === BROWSER_SCRIPT_TOOL))
+        found.push({ entry: BROWSER_SCRIPT_TOOL, strong: true });
+      ready.add(BROWSER_SCRIPT_TOOL);
+    }
     const tools = found.map(({ entry }) =>
       ready.has(entry)
         ? { name: entry.name, description: entry.description, inputSchema: entry.inputSchema }
@@ -179,7 +207,8 @@ export function discoverTools(params: DynamicToolCallParams) {
   }
   const parsed = describeSchema.safeParse(params.arguments);
   if (!parsed.success) throw new Error(sourceText("error.agent.toolRequestInvalid"));
-  const entries = [...new Set(parsed.data.names)].map(requireTool);
+  const names = [...(parsed.data.names ?? []), ...(parsed.data.name ? [parsed.data.name] : [])];
+  const entries = [...new Set(names)].map(requireTool);
   return {
     tools: entries.map(({ name, description, inputSchema }) => ({ name, description, inputSchema })),
     guidance: toolGuidanceFor(entries),

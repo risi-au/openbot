@@ -64,6 +64,8 @@ export const messages = {
   "error.team.sharedDataUnsupported": "Paylaşılan veriler bu bağlantı tarafından desteklenmiyor.",
   "error.team.agentInstallUnsupported": "Ajan ekleme bu bağlantı tarafından desteklenmiyor.",
   "error.team.agentHideUnsupported": "Ajan gizleme bu bağlantı tarafından desteklenmiyor.",
+  "error.team.agentNotificationLevelsUnsupported":
+    "Bu sunucu her ajan için kendi bildirim düzeyinizi saklayamıyor. Sunucuyu çalıştıran bilgisayarda OpenBot'u güncelleyin.",
   "error.team.agentPublishUnsupported": "Ajan yayımlama bu bağlantı tarafından desteklenmiyor.",
   "error.team.agentUpdateUnsupported": "Ajan güncelleme bu bağlantı tarafından desteklenmiyor.",
   "error.team.contextResetUnsupported": "Yeni bir sohbet başlatma bu bağlantı tarafından desteklenmiyor.",
@@ -89,6 +91,7 @@ export const messages = {
   "error.team.hostTimezoneUnsupported": "Bu bağlantı sunucunun saat dilimini desteklemiyor.",
   "error.team.routineResultsUnsupported": "Bu bağlantı rutin hedeflerini desteklemiyor.",
   "error.team.agentMemoryLimitUnsupported": "Bu bağlantı ajanların bellek sınırını desteklemiyor.",
+  "error.team.memoryReviewUnsupported": "Bu bağlantı bellek incelemesini desteklemiyor.",
   "error.team.promptCacheTtlUnsupported": "Bu bağlantı istem önbelleği süresini desteklemiyor.",
   "error.team.providerDefaultUnsupported": "Bu bağlantı varsayılan sağlayıcıyı desteklemiyor.",
   "error.team.attachmentNameRequired": "Güvenli bir ek adı gereklidir.",

@@ -60,7 +60,7 @@ try {
     store.createAgent({ name: "Browser access check", description: "", avatarSeed: "browser-check", avatarHue: null }),
   );
   const instructions = developerInstructions(agent, store.sharedRoot, [], root, DEFAULT_AGENT_DEFAULTS);
-  assert.ok(instructions.includes("Do not redirect an explicit request for their browser"));
+  assert.ok(instructions.includes("do not redirect that request to the embedded browser"));
   assert.ok(instructions.includes("the user's Chrome, Chromium, and other Linux/Omarchy applications"));
   assert.ok(!instructions.includes("Use only openbot_browser"));
   assert.ok(instructions.includes("CUA's separate agent seat and cursor"));
@@ -92,7 +92,7 @@ try {
   process.env.OPENBOT_PERSONAL_MODE = "0";
   assert.deepEqual(agentMcpServers([config, cua], true), [config, cua]);
   process.env.OPENBOT_PERSONAL_MODE = "1";
-  const guidance = toolGuidance("openbot_browser", "snapshot", { passwordVault: false });
+  const guidance = toolGuidance("openbot_browser", "snapshot", { passwordVault: false }).join("\n");
   assert.ok(guidance.includes("do not substitute the embedded browser"));
   assert.ok(!guidance.includes("For every browser task"));
   const disabled = developerInstructions(

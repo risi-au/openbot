@@ -12,11 +12,13 @@ import type {
   AgentMemorySelectionState,
   AgentModelId,
   AgentModelOption,
+  AgentNotificationLevelsSnapshot,
   AgentProviderId,
   AgentReasoningEffort,
   AgentSessionSettings,
   AgentTask,
   AgentTaskInput,
+  AgentTaskReadState,
   AgentTasksSnapshot,
   AgentTemplatePreview,
   AgentTemplatePublication,
@@ -53,6 +55,7 @@ import type {
   InstalledSkill,
   InstallMarketplaceAgentInput,
   InstallSkillInput,
+  MarkAgentTaskReadInput,
   McpServerConfig,
   McpSignInState,
   McpTestResult,
@@ -74,7 +77,9 @@ import type {
   RoutineResultDestination,
   RoutineResultRoutineInput,
   SaveWorkflowGraphInput,
+  ServerNotificationLevel,
   SetAgentMemoryInclusionInput,
+  SetAgentNotificationLevelInput,
   SetAgentProviderAccountInput,
   SetAgentSessionSettingInput,
   SetEnabledSkillInput,
@@ -298,6 +303,29 @@ export interface MobileWorkspaceContextValue {
    * `push-notifications-android-v1` for an Android phone.
    */
   canSendNotifications: (serverId: string) => boolean;
+  /**
+   * True when the host advertises `agent-notification-levels-v1`. Every member keeps a notification
+   * level of their own for each agent.
+   */
+  canSetAgentNotificationLevel: (serverId: string) => boolean;
+  /**
+   * The user's own level for the agents of `serverId`. It replaces the server level of this phone for
+   * that agent, on each device of the user.
+   */
+  loadAgentNotificationLevels: (serverId: string) => Promise<AgentNotificationLevelsSnapshot>;
+  /** `level: null` removes the level, so the server level applies again. The host answers with all levels. */
+  setAgentNotificationLevel: (
+    input: SetAgentNotificationLevelInput,
+    serverId: string,
+  ) => Promise<AgentNotificationLevelsSnapshot>;
+  /**
+   * The user's own level of the whole server, on each device of the user. `null` gives each device its
+   * own server level again. The host answers with all levels.
+   */
+  setOwnServerNotificationLevel: (
+    level: ServerNotificationLevel | null,
+    serverId: string,
+  ) => Promise<AgentNotificationLevelsSnapshot>;
   /** An absent field stays unchanged; a `null` logo removes it. */
   updateServerIdentity: (
     serverId: string,
@@ -590,6 +618,12 @@ export interface MobileWorkspaceContextValue {
   searchFiles: (query: string, serverId: string, cursor?: string) => Promise<ConversationFileSearchPage>;
   /** True when the host advertises `agent-tasks-v1`. A member who can message an agent can use its tasks. */
   canUseTasks: (serverId: string) => boolean;
+  /** True when the host advertises `agent-threads-v1`: a member who can message an agent can rename and delete its threads. */
+  canEditThreads: (serverId: string) => boolean;
+  /** True when the host advertises `agent-thread-reads-v1`: the host keeps the person's read mark of each thread. */
+  canReadThreads: (serverId: string) => boolean;
+  /** True when the host advertises `agent-thread-files-v1`: a message in a thread can carry files. */
+  canAttachThreadFiles: (serverId: string) => boolean;
   /** True when the host advertises `workflows-v1`. The host shows each member the workflows of their agents. */
   canUseWorkflows: (serverId: string) => boolean;
   listWorkflows: (serverId: string) => Promise<WorkflowSummary[]>;
@@ -611,18 +645,26 @@ export interface MobileWorkspaceContextValue {
   /** The tasks of one agent. The host answers 404 for an agent that this member cannot see. */
   loadAgentTasks: (agentId: string, serverId: string) => Promise<AgentTasksSnapshot>;
   loadAgentTaskConversation: (input: AgentTaskInput, serverId: string) => Promise<ConversationSnapshot>;
-  /** `agent-tasks-v1` carries text only. */
+  /** Files need `canAttachThreadFiles`: `agent-tasks-v1` carries text only. */
   startAgentTask: (
-    input: { agentId: string; text: string; clientMessageId: string },
+    input: { agentId: string; text: string; attachmentDraftIds?: string[]; clientMessageId: string },
     serverId: string,
   ) => Promise<AgentTask>;
   /** Steers the running turn of the task, or queues the message in the task. */
   sendAgentTaskMessage: (
-    input: AgentTaskInput & { text: string; clientMessageId: string },
+    input: AgentTaskInput & { text: string; attachmentDraftIds?: string[]; clientMessageId: string },
     serverId: string,
   ) => Promise<QueuedMessageReceipt>;
   /** Stops the running turn of a task, closes the task, or reopens it. */
   controlAgentTask: (action: "stop" | "close" | "reopen", input: AgentTaskInput, serverId: string) => Promise<void>;
+  /** Renames a thread. The title then no longer follows its first message. */
+  renameAgentThread: (input: AgentTaskInput & { title: string }, serverId: string) => Promise<void>;
+  /** Deletes a thread, its conversation, its files and its queued messages for good. */
+  deleteAgentThread: (input: AgentTaskInput, serverId: string) => Promise<void>;
+  /** The person's read mark of each open thread of the agent. The member's devices share it. */
+  loadAgentThreadReads: (agentId: string, serverId: string) => Promise<AgentTaskReadState[]>;
+  /** Moves the person's read mark of a thread to a message that they see. */
+  markAgentThreadRead: (input: MarkAgentTaskReadInput, serverId: string) => Promise<AgentTaskReadState>;
   /** Answers a question of a task turn. The host finds the question by its request, on any thread. */
   respondToTaskPrompt: (input: RespondToPromptInput, serverId: string) => Promise<void>;
   loadConversation: (agentId: string, serverId?: string) => Promise<ConversationSnapshot>;
@@ -698,8 +740,12 @@ export type MobileWorkspaceCapabilityCheck =
   | "canInstallAgentTemplate"
   | "canSearchFiles"
   | "canUseTasks"
+  | "canEditThreads"
+  | "canReadThreads"
+  | "canAttachThreadFiles"
   | "canUseWorkflows"
-  | "canReadServerStorage";
+  | "canReadServerStorage"
+  | "canSetAgentNotificationLevel";
 
 type MobileWorkspaceStateKey =
   | MobileWorkspaceCapabilityCheck

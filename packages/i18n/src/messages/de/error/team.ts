@@ -67,6 +67,8 @@ export const messages = {
   "error.team.sharedDataUnsupported": "Diese Verbindung unterstützt keine geteilten Daten.",
   "error.team.agentInstallUnsupported": "Diese Verbindung unterstützt das Hinzufügen von Agenten nicht.",
   "error.team.agentHideUnsupported": "Diese Verbindung unterstützt das Ausblenden von Agenten nicht.",
+  "error.team.agentNotificationLevelsUnsupported":
+    "Dieser Server kann keine eigene Benachrichtigungsstufe pro Agent speichern. Aktualisiere OpenBot auf dem Computer, auf dem er läuft.",
   "error.team.agentPublishUnsupported": "Diese Verbindung unterstützt das Veröffentlichen von Agenten nicht.",
   "error.team.agentUpdateUnsupported": "Diese Verbindung unterstützt das Aktualisieren von Agenten nicht.",
   "error.team.contextResetUnsupported": "Diese Verbindung unterstützt das Starten eines neuen Chats nicht.",
@@ -92,6 +94,7 @@ export const messages = {
   "error.team.hostTimezoneUnsupported": "Diese Verbindung unterstützt die Zeitzone des Servers nicht.",
   "error.team.routineResultsUnsupported": "Diese Verbindung unterstützt keine Ziele für Routinen.",
   "error.team.agentMemoryLimitUnsupported": "Diese Verbindung unterstützt das Erinnerungslimit der Agenten nicht.",
+  "error.team.memoryReviewUnsupported": "Diese Verbindung unterstützt die Erinnerungsprüfung nicht.",
   "error.team.promptCacheTtlUnsupported": "Diese Verbindung unterstützt die Prompt-Cache-Dauer nicht.",
   "error.team.providerDefaultUnsupported": "Diese Verbindung unterstützt den Standardanbieter nicht.",
   "error.team.attachmentNameRequired": "Ein sicherer Anhangsname ist erforderlich.",

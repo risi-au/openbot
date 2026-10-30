@@ -63,6 +63,8 @@ export const messages = {
   "error.team.sharedDataUnsupported": "当前连接不支持共享数据。",
   "error.team.agentInstallUnsupported": "当前连接不支持添加助手。",
   "error.team.agentHideUnsupported": "当前连接不支持隐藏助手。",
+  "error.team.agentNotificationLevelsUnsupported":
+    "此服务器无法为每个助手保存你自己的通知级别。请在运行它的电脑上更新 OpenBot。",
   "error.team.agentPublishUnsupported": "当前连接不支持发布助手。",
   "error.team.agentUpdateUnsupported": "当前连接不支持更新助手。",
   "error.team.contextResetUnsupported": "当前连接不支持开始新对话。",
@@ -86,6 +88,7 @@ export const messages = {
   "error.team.hostTimezoneUnsupported": "当前连接不支持服务器时区。",
   "error.team.routineResultsUnsupported": "当前连接不支持自动化任务的结果去向。",
   "error.team.agentMemoryLimitUnsupported": "当前连接不支持助手记忆上限。",
+  "error.team.memoryReviewUnsupported": "当前连接不支持记忆整理。",
   "error.team.promptCacheTtlUnsupported": "当前连接不支持提示缓存时间。",
   "error.team.providerDefaultUnsupported": "当前连接不支持默认服务商。",
   "error.team.agentAccessUnsupported": "当前连接不支持角色。",

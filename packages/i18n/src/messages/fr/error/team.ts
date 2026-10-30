@@ -67,6 +67,8 @@ export const messages = {
   "error.team.sharedDataUnsupported": "Les données partagées ne sont pas prises en charge par cette connexion.",
   "error.team.agentInstallUnsupported": "L’ajout d’agents n’est pas pris en charge par cette connexion.",
   "error.team.agentHideUnsupported": "Le masquage d’agents n’est pas pris en charge par cette connexion.",
+  "error.team.agentNotificationLevelsUnsupported":
+    "Ce serveur ne peut pas garder votre propre niveau de notifications pour chaque agent. Mettez à jour OpenBot sur l’ordinateur qui l’exécute.",
   "error.team.agentPublishUnsupported": "La publication d’agents n’est pas prise en charge par cette connexion.",
   "error.team.agentUpdateUnsupported": "La mise à jour des agents n’est pas prise en charge par cette connexion.",
   "error.team.contextResetUnsupported":
@@ -95,6 +97,7 @@ export const messages = {
   "error.team.hostTimezoneUnsupported": "Cette connexion ne prend pas en charge le fuseau horaire du serveur.",
   "error.team.routineResultsUnsupported": "Cette connexion ne prend pas en charge les destinations des routines.",
   "error.team.agentMemoryLimitUnsupported": "Cette connexion ne prend pas en charge la limite de souvenirs des agents.",
+  "error.team.memoryReviewUnsupported": "Cette connexion ne prend pas en charge la revue des souvenirs.",
   "error.team.promptCacheTtlUnsupported": "Cette connexion ne prend pas en charge la durée du cache de prompt.",
   "error.team.providerDefaultUnsupported": "Cette connexion ne prend pas en charge le fournisseur par défaut.",
   "error.team.attachmentNameRequired": "Un nom de pièce jointe sûr est requis.",

@@ -70,16 +70,18 @@ try {
       },
     });
   }
+  // This fork answers Computer Use consent without a card while auto-approve is on and the agent's own
+  // Computer Use switch is on, in personal mode and in standard mode. A card stays for Ask first,
+  // workspace only, Computer Use off, and a question that is not a tool call.
   process.env.OPENBOT_PERSONAL_MODE = "0";
   request();
-  assert.equal(client.replies.length, 0);
-  assert.equal(events.filter((event) => event.type === "prompt").length, 1);
+  assert.equal(client.replies.length, 1);
+  assert.equal(events.filter((event) => event.type === "prompt").length, 0);
   process.env.OPENBOT_PERSONAL_MODE = "1";
   for (let i = 0; i < 3; i++) request();
-  assert.equal(client.replies.length, 3);
-  assert.equal(events.filter((event) => event.type === "prompt").length, 1);
-  request(true, "hypruse");
   assert.equal(client.replies.length, 4);
+  request(true, "hypruse");
+  assert.equal(client.replies.length, 5);
   autoApprove = false;
   request();
   autoApprove = true;
@@ -91,11 +93,11 @@ try {
   request(true, "hypruse");
   computerUse = true;
   request(false);
-  assert.equal(client.replies.length, 4);
-  assert.equal(events.filter((event) => event.type === "prompt").length, 6);
+  assert.equal(client.replies.length, 5);
+  assert.equal(events.filter((event) => event.type === "prompt").length, 5);
   await writeFile(
     join(out, "report.json"),
-    `${JSON.stringify({ passed: true, approvedDesktopCalls: 4, preservedPromptCases: ["standard mode", "Ask first", "Workspace only", "CUA off", "Hypruse off", "plugin question"] }, null, 2)}\n`,
+    `${JSON.stringify({ passed: true, approvedDesktopCalls: 5, preservedPromptCases: ["Ask first", "Workspace only", "CUA off", "Hypruse off", "plugin question"] }, null, 2)}\n`,
   );
   process.stdout.write(`PASS ${join(out, "report.json")}\n`);
 } finally {

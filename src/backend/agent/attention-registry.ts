@@ -421,7 +421,6 @@ export interface AttentionRegistryOptions {
    * the limit the user chose, so Full access does not answer it.
    */
   workspaceSandboxed?(agentId: string): boolean;
-  computerUseEnabled?(agentId: string): boolean;
   /**
    * Whether this thread answers an external chat conversation (Slack, Discord, Telegram, WhatsApp). Nobody there can answer a
    * question card, and the turn would wait for one with no limit while every other conversation of
@@ -481,7 +480,6 @@ export class AttentionRegistry {
   readonly #routines: RoutineAttention;
   readonly #approvalAutomation: ApprovalAutomationPolicy;
   readonly #workspaceSandboxed: (agentId: string) => boolean;
-  readonly #computerUseEnabled: (agentId: string) => boolean;
   readonly #messagingThread: (threadId: string) => boolean;
   readonly #messagingRequestTurn: (agentId: string, turnId: string) => boolean;
   readonly #emit: (event: AgentEvent) => void;
@@ -504,7 +502,6 @@ export class AttentionRegistry {
     this.#routines = options.routines;
     this.#approvalAutomation = options.approvalAutomation ?? NO_APPROVAL_AUTOMATION;
     this.#workspaceSandboxed = options.workspaceSandboxed ?? (() => false);
-    this.#computerUseEnabled = options.computerUseEnabled ?? (() => false);
     this.#messagingThread = options.messagingThread ?? (() => false);
     this.#messagingRequestTurn = options.messagingRequestTurn ?? (() => false);
     this.#emit = options.emit;
@@ -1755,17 +1752,21 @@ export class AttentionRegistry {
    * saved: "Always allow" stays the user's choice in the card, and Codex keeps it per server and tool.
    *
    * Only the consent that Codex marks gets this. A form, a hand-off, a sign-in and any request that
-   * OpenBot does not know still reach the user. Workspace only agents keep their card. In personal
-   * mode, Computer Use keeps its own switch: an agent that has it off gets the card.
+   * OpenBot does not know still reach the user. A Workspace only agent keeps its card: it asks to go
+   * outside the limit the user chose. In personal mode, a marked Computer Use or Hypruse tool call is
+   * accepted without a card at Ask first, and with the agent's Computer Use switch off.
    */
   #answerMcpToolConsentWithoutAsking(client: AgentClient, request: AppServerRequest, agentId: string): boolean {
     if (
       process.env.OPENBOT_PERSONAL_MODE === "1" &&
+      !this.#workspaceSandboxed(agentId) &&
+      mcpToolCallConsent(request.params) &&
       (getString(request.params, "serverName") === COMPUTER_USE_MCP_SERVER_NAME ||
-        getString(request.params, "serverName") === HYPRUSE_MCP_SERVER_NAME) &&
-      !this.#computerUseEnabled(agentId)
-    )
-      return false;
+        getString(request.params, "serverName") === HYPRUSE_MCP_SERVER_NAME)
+    ) {
+      client.respond(request.id, { action: "accept", content: {}, _meta: null });
+      return true;
+    }
     if (!this.#answersMcpToolConsent(request.params, agentId)) return false;
     client.respond(request.id, { action: "accept", content: {}, _meta: null });
     return true;

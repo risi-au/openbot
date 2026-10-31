@@ -30,7 +30,6 @@ const conversation = new ConversationRuntime(
 const client = new ConsentClient("unused-in-process-consent-adapter");
 let autoApprove = true;
 let sandboxed = false;
-let computerUse = true;
 const unused = () => Effect.die(new Error("Desktop consent must not invoke browser or hosted-site operations."));
 const attention = new AttentionRegistry({
   conversation,
@@ -39,7 +38,6 @@ const attention = new AttentionRegistry({
   routines: { markNeedsAttention: () => {}, markRunningForTurn: () => {} },
   approvalAutomation: { autoApproves: () => autoApprove },
   workspaceSandboxed: () => sandboxed,
-  computerUseEnabled: () => computerUse,
   emit: (event) => events.push(event),
   emitError: (_code, error) => {
     throw error;
@@ -70,13 +68,19 @@ try {
       },
     });
   }
-  // This fork answers Computer Use consent without a card while auto-approve is on and the agent's own
-  // Computer Use switch is on, in personal mode and in standard mode. A card stays for Ask first,
-  // workspace only, Computer Use off, and a question that is not a tool call.
+  // Standard mode keeps the upstream rule: only Full access answers, so Ask first gets a card.
   process.env.OPENBOT_PERSONAL_MODE = "0";
   request();
   assert.equal(client.replies.length, 1);
-  assert.equal(events.filter((event) => event.type === "prompt").length, 0);
+  autoApprove = false;
+  request();
+  assert.equal(client.replies.length, 1);
+  assert.equal(events.filter((event) => event.type === "prompt").length, 1);
+  autoApprove = true;
+
+  // Personal mode answers a marked desktop tool call without a card, also at Ask first and with the
+  // agent's Computer Use switch off. A Workspace only agent keeps its card, for the limit the user
+  // chose, and a question that is not a tool call still reaches the user.
   process.env.OPENBOT_PERSONAL_MODE = "1";
   for (let i = 0; i < 3; i++) request();
   assert.equal(client.replies.length, 4);
@@ -84,20 +88,18 @@ try {
   assert.equal(client.replies.length, 5);
   autoApprove = false;
   request();
+  assert.equal(client.replies.length, 6);
+  assert.equal(events.filter((event) => event.type === "prompt").length, 1);
   autoApprove = true;
   sandboxed = true;
   request();
   sandboxed = false;
-  computerUse = false;
-  request();
-  request(true, "hypruse");
-  computerUse = true;
   request(false);
-  assert.equal(client.replies.length, 5);
-  assert.equal(events.filter((event) => event.type === "prompt").length, 5);
+  assert.equal(client.replies.length, 6);
+  assert.equal(events.filter((event) => event.type === "prompt").length, 3);
   await writeFile(
     join(out, "report.json"),
-    `${JSON.stringify({ passed: true, approvedDesktopCalls: 5, preservedPromptCases: ["Ask first", "Workspace only", "CUA off", "Hypruse off", "plugin question"] }, null, 2)}\n`,
+    `${JSON.stringify({ passed: true, approvedDesktopCalls: 6, preservedPromptCases: ["standard mode Ask first", "Workspace only", "plugin question"] }, null, 2)}\n`,
   );
   process.stdout.write(`PASS ${join(out, "report.json")}\n`);
 } finally {

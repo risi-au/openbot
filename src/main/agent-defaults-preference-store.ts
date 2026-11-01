@@ -4,8 +4,8 @@ import { PreferenceStore } from "./preference-file";
 
 /**
  * The account defaults of the agent settings in `AGENT_DEFAULT_KEYS`. An agent with no value of its
- * own follows them, and the backend reads them for each check. A missing file reads as all off, which
- * is what every agent had before the defaults existed; so does a key that is missing or not a boolean.
+ * own follows them, and the backend reads them for each check. A missing file reads as DEFAULT_AGENT_DEFAULTS
+ * (Local scripts on in this fork, the rest off); so does a key that is missing or not a boolean.
  */
 export type AgentDefaultsPreferenceStore = PreferenceStore<AgentDefaults>;
 

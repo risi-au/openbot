@@ -51,9 +51,12 @@ export const AGENT_DEFAULT_KEYS = ["allowAutomation", "allowNewChat", "quickAckn
 export type AgentDefaultKey = (typeof AGENT_DEFAULT_KEYS)[number];
 export type AgentDefaults = Record<AgentDefaultKey, boolean>;
 
-/** Off, which is what every agent had before the defaults existed. */
+/**
+ * Local scripts are on by default in this fork, so every agent is reachable from local tools (the t3gh bridge) without
+ * a per-agent switch. The other defaults stay off, which is what every agent had before the defaults existed.
+ */
 export const DEFAULT_AGENT_DEFAULTS: AgentDefaults = {
-  allowAutomation: false,
+  allowAutomation: true,
   allowNewChat: false,
   quickAcknowledgement: false,
 };

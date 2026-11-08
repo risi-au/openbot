@@ -122,6 +122,7 @@ import { voiceIpcHandlers } from "./ipc/voice-handlers";
 import { workflowIpcHandlers } from "./ipc/workflow-handlers";
 import { KeepAwake } from "./keep-awake";
 import { stopAppImageCrashpadHandlerAtExit } from "./linux-appimage-crashpad";
+import { installLinuxDesktopEntry } from "./linux-desktop-entry";
 import { configureLinuxGpu } from "./linux-gpu-mode";
 import { configureLinuxPasswordStore } from "./linux-password-store";
 import { restartOnXWaylandWithoutMonitor, takeXWaylandRestartMarker } from "./linux-wayland-output";

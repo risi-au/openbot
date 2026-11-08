@@ -1,10 +1,15 @@
 import assert from "node:assert/strict";
 import { mkdir, mkdtemp, readFile, writeFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
-import { COMPUTER_USE_MCP_SERVER_ID, DEFAULT_AGENT_DEFAULTS, type McpServerConfig } from "@openbot/contracts/ipc";
+import {
+  AGENT_PROVIDERS,
+  COMPUTER_USE_MCP_SERVER_ID,
+  DEFAULT_AGENT_DEFAULTS,
+  type McpServerConfig,
+} from "@openbot/contracts/ipc";
 import { developerInstructions, memoryContext } from "../src/backend/agent/developer-instructions";
 import { DISABLED_MEMORY_TOOLS } from "../src/backend/agent/memory-tool-inputs";
-import { BUILTIN_TOOL_CATALOG, VISIBLE_TOOL_DEFINITIONS } from "../src/backend/agent/tool-catalog";
+import { BUILTIN_TOOL_CATALOG, visibleToolDefinitions } from "../src/backend/agent/tool-catalog";
 import { toolGuidance } from "../src/backend/agent/tool-guidance";
 import { AgentStore } from "../src/backend/agent-store";
 import { runCauseEffect } from "../src/backend/effect-boundary";
@@ -50,7 +55,9 @@ for (let restart = 0; restart < 2; restart++) {
 assert.equal(requests, 0);
 assert.equal(await readFile(storagePath, "utf8"), "preserve-existing-encrypted-session");
 assert.deepEqual(memoryContext([], { storedMemoryCount: 99 }), { memories: [], storedCount: 0, limit: 0 });
-assert.ok(VISIBLE_TOOL_DEFINITIONS.every((tool) => !DISABLED_MEMORY_TOOLS.has(tool.name)));
+for (const provider of AGENT_PROVIDERS) {
+  assert.ok(visibleToolDefinitions(provider).every((tool) => !DISABLED_MEMORY_TOOLS.has(tool.name)));
+}
 assert.ok(BUILTIN_TOOL_CATALOG.every((tool) => !DISABLED_MEMORY_TOOLS.has(tool.tool)));
 await runCauseEffect(new ManagedSkillService(join(root, "missing-skill")).syncAll([]));
 const store = new AgentStore(join(root, "data"), join(root, "home"));

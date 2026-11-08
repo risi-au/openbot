@@ -28,8 +28,8 @@ import { type AgentAdminSettingsService, createAgentAdminSettings } from "./agen
 import { spawnAgentDatabaseHost } from "./agent-database-host-process";
 import { agentDisplayEnvironment, hasSeparateAgentDisplay } from "./agent-display";
 import { type AgentFolders, createAgentFolders } from "./agent-folders";
-import { type AgentInstructionsFiles, createAgentInstructionsFiles } from "./agent-instructions-files";
 import { type AgentHostSettingsService, createAgentHostSettings } from "./agent-host-settings";
+import { type AgentInstructionsFiles, createAgentInstructionsFiles } from "./agent-instructions-files";
 import {
   type BrowserProfileService,
   browserProxyConnection,
@@ -312,7 +312,7 @@ import { PROVIDER_DETECTION_SETTINGS_FILE, ProviderDetectionSettingsStore } from
 import { ProviderHostSignIns } from "./provider-host-sign-ins";
 import { startAccountLog, startAgentLog, startProviderLog } from "./provider-log";
 import { toProviderRuntimeFailure } from "./provider-runtime-effects";
-import { ProviderRuntimeManager, runtimeTarget } from "./provider-runtime-manager";
+import { ProviderRuntimeManager, providerRuntimeRoot, runtimeTarget } from "./provider-runtime-manager";
 import { ProviderUseSettingsStore } from "./provider-use-settings-store";
 import { RelayedMessagingInstalls } from "./relayed-messaging-installs";
 import { decodeQueuedMessageReceipt } from "./remote-agent-decoding";

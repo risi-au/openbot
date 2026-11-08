@@ -75,9 +75,12 @@ export const DEFAULT_AUTOMATION_RUNS_PER_HOUR = 30;
 export const MIN_AUTOMATION_RUNS_PER_HOUR = 1;
 export const MAX_AUTOMATION_RUNS_PER_HOUR = 10_000;
 
-/** Off, which is what every agent had before the defaults existed. */
+/**
+ * Local scripts are on by default in this fork, so every agent is reachable from local tools (the t3gh bridge) without
+ * a per-agent switch. The other defaults stay off, which is what every agent had before the defaults existed.
+ */
 export const DEFAULT_AGENT_DEFAULTS: AgentDefaults = {
-  allowAutomation: false,
+  allowAutomation: true,
   allowNewChat: false,
   quickAcknowledgement: false,
   planStartAfterMs: DEFAULT_PLAN_START_AFTER_MS,

@@ -15,6 +15,8 @@ const logger = createOpenBotLogger("personal-update");
 const STATUS_FILE = "app-update-status.json";
 const BINARY_NAME = "openbot-personal";
 const POLL_MS = 1_200;
+/** The script stamps its own runs in seconds where the service stamps in milliseconds. */
+const RUN_NEAR_MS = 3_000;
 
 interface PersonalUpdateServiceEvents {
   status: [status: PersonalUpdateStatus];
@@ -54,7 +56,7 @@ export class PersonalUpdateService extends EventEmitter<PersonalUpdateServiceEve
   }
 
   getStatus(): PersonalUpdateStatus {
-    return { ...this.#last };
+    return this.#clean(this.#last);
   }
 
   async check(): Promise<PersonalUpdateStatus> {
@@ -123,10 +125,20 @@ export class PersonalUpdateService extends EventEmitter<PersonalUpdateServiceEve
     }
   }
 
+  /** A status belongs to the run when both started stamps mean the same moment. */
+  #startedWithRun(fileStartedAt: string | undefined, runStartedAt: string): boolean {
+    if (fileStartedAt === undefined) return false;
+    if (fileStartedAt === runStartedAt) return true;
+    const fileTime = Date.parse(fileStartedAt);
+    const runTime = Date.parse(runStartedAt);
+    if (Number.isNaN(fileTime) || Number.isNaN(runTime)) return false;
+    return Math.abs(fileTime - runTime) < RUN_NEAR_MS;
+  }
+
   /** The script writes each phase into its status file; the poll lifts a change into the app. */
   #pollRun(runStartedAt: string): void {
     const status = this.#readStatusFile();
-    if (status === null || status.startedAt !== runStartedAt) return;
+    if (status === null || !this.#startedWithRun(status.startedAt, runStartedAt)) return;
     this.#setStatus(status);
   }
 
@@ -134,7 +146,7 @@ export class PersonalUpdateService extends EventEmitter<PersonalUpdateServiceEve
     if (this.#poll !== undefined) clearInterval(this.#poll);
     this.#poll = undefined;
     const status = this.#readStatusFile();
-    if (status === null || status.startedAt !== runStartedAt || isBusy(status.phase)) {
+    if (status === null || !this.#startedWithRun(status.startedAt, runStartedAt) || isBusy(status.phase)) {
       this.#setStatus({
         phase: "error",
         conflicts: [],
@@ -192,6 +204,21 @@ export class PersonalUpdateService extends EventEmitter<PersonalUpdateServiceEve
       this.#last.version === next.version &&
       this.#last.startedAt === next.startedAt;
     this.#last = next;
-    if (!same) this.emit("status", { ...next });
+    if (!same) this.emit("status", this.#clean(next));
+  }
+
+  /** A field that holds undefined stays away from the IPC payload: the decoder drops records that carry one. */
+  #clean(status: PersonalUpdateStatus): PersonalUpdateStatus {
+    const { message, tag, version, installDir, startedAt, finishedAt } = status;
+    return {
+      phase: status.phase,
+      conflicts: [...status.conflicts],
+      ...(message === undefined ? {} : { message }),
+      ...(tag === undefined ? {} : { tag }),
+      ...(version === undefined ? {} : { version }),
+      ...(installDir === undefined ? {} : { installDir }),
+      ...(startedAt === undefined ? {} : { startedAt }),
+      ...(finishedAt === undefined ? {} : { finishedAt }),
+    };
   }
 }

@@ -192,7 +192,7 @@ if [ "$REBUILD" != "yes" ]; then
       git -C "$REPO" merge --abort
       mark_finished
       write_status conflict "The merge clashes with archived fork edits." "$tag" "-" "-" "$conflicts" "$STARTED"
-      echo "NOTE: the merge stopped on conflicts; nothing of the branch changed. Fix the files in the repo, run 'GIT_EDITOR=true git merge --continue', then press Update again."
+      echo "NOTE: the merge stopped on conflicts and was aborted; nothing of the branch changed. Resolve the listed files in the repo (rerere replays recorded fixes), merge the release tag again, then run Update again or 'bash scripts/personal-app-update.sh --repo <worktree> update --rebuild'."
       exit 0
     fi
     if ! git -C "$REPO" push origin "$BRANCH"; then

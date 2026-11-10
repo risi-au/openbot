@@ -104,6 +104,7 @@ import { messagingIpcHandlers } from "./ipc/messaging-handlers";
 import { notificationIpcHandlers } from "./ipc/notification-handlers";
 import { onePasswordConnectorIpcHandlers } from "./ipc/onepassword-connector-handlers";
 import { passwordManagersIpcHandlers } from "./ipc/password-managers-handlers";
+import { personalUpdateIpcHandlers } from "./ipc/personal-update-handlers";
 import { pluginIpcHandlers } from "./ipc/plugin-handlers";
 import { providerAdminIpcHandlers } from "./ipc/provider-admin-handlers";
 import { providerDetectionIpcHandlers } from "./ipc/provider-detection-handlers";
@@ -494,6 +495,7 @@ const {
   forwardWorkflowNotice,
   forwardBrowserDisplayState,
   forwardUpdateStatus,
+  forwardPersonalUpdateStatus,
   forwardUpdatePreference,
   forwardVoiceModelStatus,
   forwardVoiceStreamTranscript,
@@ -711,6 +713,7 @@ function registerIpcHandlers({
   browserDock,
   browserView,
   updater,
+  personalUpdate,
   setupFile,
   analyticsPreferences,
   analyticsInstallId,
@@ -921,6 +924,7 @@ function registerIpcHandlers({
       translate: language.translate,
     }),
     ...updateIpcHandlers({ updater, updatePreferenceFile, requestedUpdate, idleRestart }),
+    ...personalUpdateIpcHandlers({ personalUpdate }),
     ...notificationIpcHandlers({
       notificationPreference,
       translate: language.translate,
@@ -1444,6 +1448,7 @@ if (!hasSingleInstanceLock) {
         remoteDesktop,
         remoteServers,
         updater,
+        personalUpdate,
         dynamicIsland,
         agentDock,
         teamStore,
@@ -1575,6 +1580,7 @@ if (!hasSingleInstanceLock) {
         app.exit(0);
       });
       built.requestedUpdate.on("preference", forwardUpdatePreference);
+      personalUpdate.on("status", forwardPersonalUpdateStatus);
       updater.start();
       // Each tenant quits only itself. The host verifies process exit independently.
       built.hostUpdateCoordinator.setStopHandler(async () => {

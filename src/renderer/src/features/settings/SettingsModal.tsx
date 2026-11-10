@@ -42,7 +42,9 @@ import { createSettingsProfileStore } from "@openbot/ui/features/settings/stores
 import { createSettingsUpdatesStore } from "@openbot/ui/features/settings/stores/updates-store";
 import { createEffect, createSignal, Show, untrack } from "solid-js";
 import { useI18n } from "../../i18n-context";
+import { usePlatform } from "../../platform";
 import { ComputerUseSetup } from "../computer-use/ComputerUseSetup";
+import { PersonalUpdatesCard } from "../personal-updates/PersonalUpdatesCard";
 import type { CodexLiveAccess } from "../speech/codex-live-access";
 import { licenseContactUs, trackLicenseEvent } from "./license-analytics";
 import { createNotificationLevelsStore } from "./notification-levels-store";
@@ -140,6 +142,8 @@ export interface SettingsModalProps {
  */
 export function SettingsModal(props: SettingsModalProps) {
   const i18n = useI18n();
+  // The fork's own updater only exists in the personal build, which is the installed app's name.
+  const personalBuild = usePlatform().appInfo()?.name === "OpenBot Personal";
   const [activeTab, setActiveTab] = createSignal<SettingsTab>(
     untrack(() => (props.initialTab === "hosted-servers" ? "billing" : props.initialTab)) ?? "general",
   );
@@ -417,6 +421,9 @@ export function SettingsModal(props: SettingsModalProps) {
             onUpdateSetting={updateSetting}
             selectMount={modalElement}
           />
+          <Show when={personalBuild}>
+            <PersonalUpdatesCard />
+          </Show>
         </Tabs.Content>
       </SettingsDialogShell>
     </Tabs.Root>

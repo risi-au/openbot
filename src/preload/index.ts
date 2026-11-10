@@ -191,6 +191,7 @@ import {
   decodePendingAgentTemplate,
   decodePendingListing,
   decodePendingMarketplaceListing,
+  decodePersonalUpdateStatus,
   decodeProviderDetectionSettings,
   decodeRemoteDesktopSetupFromMain,
   decodeRemoteDesktopTestFromMain,
@@ -1476,6 +1477,13 @@ const openbotApi: OpenBotDesktopApi = {
     cancelIdleRestart: decodeUpdateStatus,
     event: decodeUpdateStatus,
     preference: decodeUpdatePreference,
+  }),
+  personalUpdate: bridgeGroup(IPC_ENDPOINTS.personalUpdate, {
+    getStatus: decodePersonalUpdateStatus,
+    check: decodePersonalUpdateStatus,
+    updateNow: decodePersonalUpdateStatus,
+    restart: decodeVoid,
+    event: decodePersonalUpdateStatus,
   }),
   notifications: bridgeGroup(IPC_ENDPOINTS.notifications, {
     getPreference: decodeNotificationPreference,

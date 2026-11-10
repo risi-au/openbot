@@ -45,6 +45,8 @@ export type CentralAuthDesktopApi = GroupApi<IpcEndpoints["auth"]>;
 
 export type UpdateDesktopApi = GroupApi<IpcEndpoints["update"]>;
 
+export type PersonalUpdateDesktopApi = GroupApi<IpcEndpoints["personalUpdate"]>;
+
 export type NotificationsDesktopApi = GroupApi<IpcEndpoints["notifications"]>;
 
 export type ProviderRuntimesDesktopApi = GroupApi<IpcEndpoints["providerRuntimes"]>;

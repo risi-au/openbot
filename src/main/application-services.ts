@@ -74,7 +74,7 @@ import { RemoteWorkflowError, toRemoteWorkflowError } from "./remote-service-eff
 
 import { existsSync } from "node:fs";
 import { readdir, rm } from "node:fs/promises";
-import { homedir, hostname, tmpdir } from "node:os";
+import { homedir, hostname, tmpdir, userInfo } from "node:os";
 import { join, resolve } from "node:path";
 import { createInterface } from "node:readline";
 import type { Readable } from "node:stream";
@@ -303,6 +303,7 @@ import { EncryptedRecordStore } from "./password-managers/encrypted-record-store
 import { PasswordManagersService } from "./password-managers/password-managers-service";
 import { managedProtonPassCli } from "./password-managers/proton-pass-cli-installer";
 import { ProtonPassDriver, protonPassRecordSchema } from "./password-managers/proton-pass-driver";
+import { PersonalUpdateService } from "./personal-update-service";
 import { PromptCacheTtlPreferenceStore } from "./prompt-cache-ttl-preference-store";
 import { ProviderAccountsHost } from "./provider-accounts-host";
 import { createProviderCliAppVersionStore } from "./provider-cli-app-version-store";
@@ -495,6 +496,7 @@ const TEARDOWN_ORDER = {
   idleRestart: 11,
   hostUpdateCoordinator: 12,
   requestedUpdate: 13,
+  personalUpdate: 13.25,
   hostedServerStartRetry: 14,
   launchPublishRetry: 14.5,
   hostedServerActivity: 15,
@@ -647,6 +649,8 @@ export interface ApplicationServices {
   browserDock: BrowserDockOverlay;
   browserView: BrowserViewClient;
   updater: UpdateService;
+  /** The fork's own merge-build-swap updater. Only the personal build shows it in the settings. */
+  personalUpdate: PersonalUpdateService;
   /** Point-in-time restart safety for host-managed updates. Nothing holds the instance when empty. */
   describeRestartReadiness: () => RestartReadiness;
   hostUpdateCoordinator: HostUpdateCoordinator;
@@ -3767,6 +3771,28 @@ export async function createApplicationServices({
     log: (message) => logger.info(message),
   });
   teardown.push(TEARDOWN_ORDER.idleRestart, "the restart when idle", () => idleRestart.dispose());
+  // The fork follows the upstream releases itself: the script merges, builds and swaps, and this
+  // service polls the run and quits into the swapped build. The worktree holds the personal line,
+  // under the real user home, which the packaged app's own HOME no longer names.
+  const personalUpdateHome = userInfo().homedir;
+  const personalRepoWorktree = join(
+    personalUpdateHome,
+    "Work",
+    "working-projects",
+    "openbot",
+    ".worktrees",
+    "local-isolation",
+  );
+  const personalUpdate = new PersonalUpdateService({
+    repoWorktree: personalRepoWorktree,
+    scriptPath: join(personalRepoWorktree, "scripts", "personal-app-update.sh"),
+    updatesDirectory: join(personalUpdateHome, ".local", "opt", "openbot-personal"),
+    userHome: personalUpdateHome,
+    quit: () => app.quit(),
+    platform: process.platform,
+  });
+  personalUpdate.start();
+  teardown.push(TEARDOWN_ORDER.personalUpdate, "the personal update", () => personalUpdate.stop());
   if (hostedServer) {
     const hostedServerStartRetry = new HostedServerStartRetry({
       hostPhase: () => host.getStatus().phase,
@@ -3906,6 +3932,7 @@ export async function createApplicationServices({
     browserDock,
     browserView,
     updater,
+    personalUpdate,
     setupFile,
     analyticsPreferences,
     analyticsInstallId,

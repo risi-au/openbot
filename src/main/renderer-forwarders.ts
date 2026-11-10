@@ -548,6 +548,10 @@ export function createRendererForwarders({
     for (const window of appWindows()) sendToRenderer(window, IPC_ENDPOINTS.update.event, status);
   }
 
+  function forwardPersonalUpdateStatus(status: import("@openbot/contracts/ipc").PersonalUpdateStatus): void {
+    for (const window of appWindows()) sendToRenderer(window, IPC_ENDPOINTS.personalUpdate.event, status);
+  }
+
   function forwardUpdatePreference(preference: import("@openbot/contracts/ipc").UpdatePreference): void {
     for (const window of appWindows()) sendToRenderer(window, IPC_ENDPOINTS.update.preference, preference);
   }
@@ -668,6 +672,7 @@ export function createRendererForwarders({
     forwardMachineAlert,
     forwardBrowserDisplayState,
     forwardUpdateStatus,
+    forwardPersonalUpdateStatus,
     forwardUpdatePreference,
     forwardVoiceModelStatus,
     forwardVoiceStreamTranscript,

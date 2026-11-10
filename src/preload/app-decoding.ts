@@ -106,6 +106,8 @@ import {
   type NotificationOpenedEvent,
   type NotificationPreference,
   type OnePasswordConnectorStatus,
+  PERSONAL_UPDATE_PHASES,
+  type PersonalUpdateStatus,
   type ProviderDetectionSettings,
   parseGitHubConnectorRepositories,
   parseGitHubConnectorStatus,
@@ -407,6 +409,29 @@ export function decodeAccountSessions(value: unknown): AccountSession[] {
       ...(hostedServer === undefined ? {} : { hostedServer }),
     };
   });
+}
+
+export function decodePersonalUpdateStatus(value: unknown): PersonalUpdateStatus {
+  const status = decodeRecord(value, "personal update status");
+  if (!isOneOf(PERSONAL_UPDATE_PHASES, status.phase)) throw new Error("Invalid phase.");
+  const { conflicts } = status;
+  if (!Array.isArray(conflicts) || !conflicts.every((item) => isString(item))) throw new Error("Invalid conflicts.");
+  const tag = nullableString(status, "tag");
+  const version = nullableString(status, "version");
+  const message = nullableString(status, "message");
+  const installDir = nullableString(status, "installDir");
+  const startedAt = nullableString(status, "startedAt");
+  const finishedAt = nullableString(status, "finishedAt");
+  return {
+    phase: status.phase,
+    conflicts: [...conflicts],
+    ...(message === null ? {} : { message }),
+    ...(tag === null ? {} : { tag }),
+    ...(version === null ? {} : { version }),
+    ...(installDir === null ? {} : { installDir }),
+    ...(startedAt === null ? {} : { startedAt }),
+    ...(finishedAt === null ? {} : { finishedAt }),
+  };
 }
 
 export function decodeUpdateStatus(value: unknown): UpdateStatus {

@@ -123,6 +123,7 @@ import {
   type OpenBotDesktopApi,
   type OpenSharedFileInput,
   type OpenWorkspaceFileInput,
+  type PersonalUpdateStatus,
   PLAN_CONTINUATION_ITEM_TYPE,
   type PromptCacheTtlSetting,
   type ProviderAccountStatus,
@@ -710,6 +711,14 @@ export function createMockOpenBot(options: MockOpenBotOptions = {}): MockOpenBot
 
   const agentListeners = new Set<Listener<AgentEvent>>();
   const updateListeners = new Set<Listener<UpdateStatus>>();
+  const personalUpdateListeners = new Set<Listener<PersonalUpdateStatus>>();
+  let personalUpdateStatus: PersonalUpdateStatus = {
+    phase: "current",
+    conflicts: [],
+    tag: "v0.66.0",
+    version: "0.66.0",
+  };
+  const emitPersonalUpdate = () => emit(personalUpdateListeners, personalUpdateStatus);
   const attachmentListeners = new Set<Listener<AttachmentImportEvent>>();
   const latestConversationListeners = new Set<Listener<string>>();
   const messageSentListeners = new Set<(message: MockSentMessage) => boolean>();
@@ -3401,6 +3410,60 @@ export function createMockOpenBot(options: MockOpenBotOptions = {}): MockOpenBot
       },
       // The preview has no joined server whose admin could change it.
       onPreference: () => () => undefined,
+    },
+    personalUpdate: {
+      getStatus: async () => clone(personalUpdateStatus),
+      check: async () => {
+        personalUpdateStatus = { ...personalUpdateStatus, phase: "checking" };
+        emitPersonalUpdate();
+        schedule(() => {
+          personalUpdateStatus = {
+            phase: "available",
+            conflicts: [],
+            tag: "v0.67.0",
+            version: "0.67.0",
+            finishedAt: new Date().toISOString(),
+          };
+          emitPersonalUpdate();
+        }, 600);
+        return clone(personalUpdateStatus);
+      },
+      // The preview walks the run's phases the way the script does, one scheduled step at a time.
+      updateNow: async () => {
+        personalUpdateStatus = { ...personalUpdateStatus, phase: "fetching", conflicts: [] };
+        emitPersonalUpdate();
+        const steps = [
+          { phase: "merging", message: "Merging v0.67.0 into the fork.", tag: "v0.67.0" },
+          { phase: "installing-deps", message: "Preparing the dependencies.", tag: "v0.67.0" },
+          { phase: "building", message: "Building the app.", tag: "v0.67.0" },
+          { phase: "packaging", message: "Packing the desktop app.", tag: "v0.67.0" },
+          { phase: "installing", message: "Installing 0.67.0.", tag: "v0.67.0" },
+          { phase: "ready", message: "Version 0.67.0 is installed. Restart OpenBot to use it.", tag: "v0.67.0" },
+        ] as const;
+        steps.forEach((step, index) => {
+          schedule(
+            () => {
+              if (personalUpdateStatus.version === "0.67.0" && personalUpdateStatus.phase === "ready") return;
+              personalUpdateStatus = {
+                ...personalUpdateStatus,
+                phase: step.phase,
+                message: step.message,
+                tag: step.tag,
+                ...(step.phase === "ready" ? { version: "0.67.0" } : {}),
+              };
+              emitPersonalUpdate();
+            },
+            500 + index * 500,
+          );
+        });
+        return clone(personalUpdateStatus);
+      },
+      // The preview never quits: the restart lives in the real build only.
+      restart: async () => undefined,
+      onEvent: (listener) => {
+        personalUpdateListeners.add(listener);
+        return () => personalUpdateListeners.delete(listener);
+      },
     },
     notifications: {
       getPreference: async () => ({ desktopNotifications: true, messagePreview: true }),

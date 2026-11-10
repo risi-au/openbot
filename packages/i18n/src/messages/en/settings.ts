@@ -516,6 +516,18 @@ export const messages = defineMessages("settings", {
   "settings.updates.allowRemote.title": "Allow updates from server members",
   "settings.updates.allowRemote.description":
     "All signed-in server members can request an update when this computer is idle. Owners and admins can also force a restart.",
+  // The Personal build card on the Updates tab: only the OpenBot Personal fork shows it.
+  "settings.personalUpdates.title": "Personal build",
+  "settings.personalUpdates.description": "This fork follows the OpenBot releases itself.",
+  "settings.personalUpdates.check": "Check for updates",
+  "settings.personalUpdates.update": "Update now",
+  "settings.personalUpdates.retry": "Try again",
+  "settings.personalUpdates.restart": "Restart OpenBot",
+  "settings.personalUpdates.busy": "Working on the update",
+  "settings.personalUpdates.conflict": "Resolve the conflict in the fork, then update again.",
+  "settings.personalUpdates.error": "The last update run failed.",
+  "settings.personalUpdates.upToDate": "Up to date",
+  "settings.personalUpdates.conflictFiles": "Conflicts: {files}",
   // The Hosted sites tab.
   "settings.hostedSites.title": "Published sites",
   "settings.hostedSites.unavailable": "Site hosting is unavailable.",

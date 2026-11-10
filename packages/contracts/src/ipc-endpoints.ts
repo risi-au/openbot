@@ -434,6 +434,7 @@ import type {
   OnePasswordHostConnectInput,
 } from "./ipc-onepassword-connector";
 import type { PasswordManagerConnectInput, PasswordManagerId, PasswordManagerStatus } from "./ipc-password-managers";
+import type { PersonalUpdateStatus } from "./ipc-personal-update";
 import type { PromptCacheTtl, PromptCacheTtlSetting } from "./ipc-prompt-cache";
 import type {
   DetectedModelServer,
@@ -1581,6 +1582,15 @@ export const IPC_ENDPOINTS = {
     // A preference that an admin of a joined server changed on this computer.
     preference: event<UpdatePreference>()("update:preference-event"),
   },
+  // The OpenBot Personal fork merges and builds its releases itself; the normal updater above stays
+  // off on such an app.
+  personalUpdate: {
+    getStatus: request<undefined, PersonalUpdateStatus>()("personal-update:get-status"),
+    check: request<undefined, PersonalUpdateStatus>()("personal-update:check"),
+    updateNow: request<undefined, PersonalUpdateStatus>()("personal-update:update-now"),
+    restart: request<undefined, void>()("personal-update:restart"),
+    event: event<PersonalUpdateStatus>()("personal-update:event"),
+  },
   notifications: {
     getPreference: request<undefined, NotificationPreference>()("notifications:get-preference"),
     setPreference: request<NotificationPreference, NotificationPreference>()("notifications:set-preference"),
@@ -2246,6 +2256,7 @@ export const IPC_GROUP_PATHS = {
   agentTemplates: "agentTemplates",
   auth: "auth",
   update: "update",
+  personalUpdate: "personalUpdate",
   notifications: "notifications",
   agent: "agent",
   agentMemories: "agent",

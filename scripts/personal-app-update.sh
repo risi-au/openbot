@@ -32,7 +32,7 @@ while [ $# -gt 0 ]; do
     --rebuild) REBUILD="yes"; shift ;;
     --wait-pid) WAIT_PID="$2"; shift 2 ;;
     --*) echo "Unknown option: $1" >&2; exit 64 ;;
-    *) COMMAND="$1"; shift; if [ $# -gt 0 ]; then echo "Unexpected extra argument." >&2; exit 64; fi ;;
+    *) if [ -n "$COMMAND" ]; then echo "Unexpected extra argument." >&2; exit 64; fi; COMMAND="$1"; shift ;;
   esac
 done
 if [ "$COMMAND" != "check" ] && [ "$COMMAND" != "update" ]; then

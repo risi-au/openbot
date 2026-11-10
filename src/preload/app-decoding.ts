@@ -416,21 +416,21 @@ export function decodePersonalUpdateStatus(value: unknown): PersonalUpdateStatus
   if (!isOneOf(PERSONAL_UPDATE_PHASES, status.phase)) throw new Error("Invalid phase.");
   const { conflicts } = status;
   if (!Array.isArray(conflicts) || !conflicts.every((item) => isString(item))) throw new Error("Invalid conflicts.");
-  const tag = nullableString(status, "tag");
-  const version = nullableString(status, "version");
-  const message = nullableString(status, "message");
-  const installDir = nullableString(status, "installDir");
-  const startedAt = nullableString(status, "startedAt");
-  const finishedAt = nullableString(status, "finishedAt");
+  const optionalText = (field: string): Record<string, string> => {
+    const fieldValue = status[field];
+    if (fieldValue === undefined || fieldValue === null) return {};
+    if (!isString(fieldValue)) throw new Error(`Invalid ${field}.`);
+    return { [field]: fieldValue };
+  };
   return {
     phase: status.phase,
     conflicts: [...conflicts],
-    ...(message === null ? {} : { message }),
-    ...(tag === null ? {} : { tag }),
-    ...(version === null ? {} : { version }),
-    ...(installDir === null ? {} : { installDir }),
-    ...(startedAt === null ? {} : { startedAt }),
-    ...(finishedAt === null ? {} : { finishedAt }),
+    ...optionalText("message"),
+    ...optionalText("tag"),
+    ...optionalText("version"),
+    ...optionalText("installDir"),
+    ...optionalText("startedAt"),
+    ...optionalText("finishedAt"),
   };
 }
 

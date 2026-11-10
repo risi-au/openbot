@@ -42,6 +42,7 @@ import {
   decodeChannelPage,
   decodeChannelSummaries,
   decodeSaveAgentProfileResult,
+  decodeSaveSkillSuggestionResult,
   hostAnalyticsQuery,
   isAgentModelOption,
   LOCAL_SERVER_ID,
@@ -54,6 +55,7 @@ import {
   parseLocalBrowserSecretResponse,
   parseResetAgentSessionSetting,
   parseSaveAgentProfile,
+  parseSaveSkillSuggestion,
   parseSetAgentHiddenInput,
   parseSetAgentNotificationLevelInput,
   parseSetAgentSessionSetting,
@@ -110,6 +112,7 @@ import {
   SIDE_QUESTION_CAPABILITY,
   SIDE_QUESTION_ROUTES,
 } from "@openbot/contracts/team-protocol/side-question-v1";
+import { SKILL_LEARNING_CAPABILITY, SKILL_LEARNING_ROUTES } from "@openbot/contracts/team-protocol/skill-learning-v1";
 import { sourceText } from "@openbot/i18n/source";
 import { createOpenBotLogger } from "@openbot/logging";
 import { Effect } from "effect";
@@ -649,6 +652,20 @@ export function agentIpcHandlers({
           );
         },
       }),
+      saveSkillSuggestion: scopedHandler(parseSaveSkillSuggestion, {
+        local: (input) => runCauseEffect(service.saveSkillSuggestion(input)),
+        remote: async (input, serverId) => {
+          // An older host has no route: the card then sends the user's yes to the agent.
+          if (!remoteServers.supportsCapability(serverId, SKILL_LEARNING_CAPABILITY)) return { saved: false };
+          return runCauseEffect(
+            remoteServers.request(serverId, SKILL_LEARNING_ROUTES.save, decodeSaveSkillSuggestionResult, {
+              method: "POST",
+              body: { agentId: input.agentId, messageId: input.messageId },
+              timeoutMs: 150_000,
+            }),
+          );
+        },
+      }),
       saveProfile: scopedHandler(parseSaveAgentProfile, {
         local: (input) => runCauseEffect(service.saveProfile(input, sidebarLayout, host.conversationSender())),
         remote: async (input, serverId) =>
@@ -663,7 +680,9 @@ export function agentIpcHandlers({
           ),
       }),
       createAgent: scopedHandler(parseCreateAgent, {
-        local: (parsed) => runCauseEffect(service.createAgent(parsed, undefined, undefined, host.conversationSender())),
+        // The renderer always sends a setup message to its own host.
+        local: (parsed) =>
+          runCauseEffect(service.createAgent(parsed, undefined, undefined, host.conversationSender(), true)),
         remote: async (parsed, serverId) => {
           // The released route keeps the nearest hue. The exact colour goes on `agent-colors-v1` after it.
           // The released route does not carry the account, so a remote agent starts on the provider's own sign-in.

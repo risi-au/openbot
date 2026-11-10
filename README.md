@@ -265,7 +265,8 @@ Mistral uses a Mistral account or a Mistral API key. OpenBot downloads and pins 
 server (`vibe-acp`) when you select Download on the Mistral row in More providers. Sign in opens
 Mistral's sign-in page in your browser. Vibe saves an API key in the system keychain, or in
 `~/.vibe/.env` when there is no keychain. If `MISTRAL_API_KEY` is set for OpenBot, Vibe uses that key,
-and Disconnect cannot remove it. OpenBot turns off Vibe's telemetry. If you installed `vibe-acp`
+and Disconnect cannot remove it. OpenBot turns off Vibe's telemetry, and turns on Vibe's model
+catalogue, so the model picker shows the models of your Mistral account, not only Mistral Medium 3.5. If you installed `vibe-acp`
 yourself, OpenBot uses it until a download exists. Set `OPENBOT_MISTRAL_PATH` to select an executable
 yourself. When a Full access Mistral agent changes its model or thinking level, Vibe saves it as its
 default in `~/.vibe/config.toml`. Mistral agents run on this computer. Team members see them when
@@ -388,9 +389,9 @@ Optional scripts, references, and assets follow the Codex skill folder structure
 
 ## Import agents from Grok Bot
 
-Open **Server settings → Import** on this computer, or on a joined server in the desktop app or the browser client. Every member of a server can import, not only an owner or admin. Add the [OpenBot export agent](https://x.ai/bot/gI0XdhhDYPJeyQaqQBC0O) to Grok Bot and say "Export my agents for OpenBot". It saves one `.zip` file to Downloads. Choose that file in OpenBot, select the agents, and import them.
+Open **Server settings → Import** on this computer, or on a joined server in the desktop app or the browser client. Every member of a server can import, not only an owner or admin. Add the [OpenBot export agent](https://x.ai/bot/pOUBH2kQK8CKvM7nW8stG) to Grok Bot and say "Export my agents for OpenBot". It saves one `.zip` file to Downloads. Choose that file in OpenBot, select the agents, and import them.
 
-The import adds each agent's name, instructions, avatar, skills, routines, and memories. Workspace files are copied to `imported/` in the agent's workspace if you included them. Chat history is not copied: the export agent keeps the important facts as memories. For this computer, the file is read here and is not uploaded. For a joined server, the file (at most 100 MB) goes to the computer that runs that server through the encrypted host connection. A member's import uses a skill that the server already has instead of changing it. The export skill and its format are in [`resources/agent-import/grok-bot/SKILL.md`](resources/agent-import/grok-bot/SKILL.md).
+The import adds each agent's name, instructions, avatar, skills, routines, and memories. Workspace files are copied to `imported/` in the agent's workspace if you included them. Chat history is not copied: the export agent keeps the important facts as memories. For this computer, the file is read here and is not uploaded, and it has no size limit: OpenBot reads it from disk one file at a time and skips an agent whose files do not fit in the free disk space. For a joined server, the file (at most 100 MB) goes to the computer that runs that server through the encrypted host connection. A member's import uses a skill that the server already has instead of changing it. The export skill and its format are in [`resources/agent-import/grok-bot/SKILL.md`](resources/agent-import/grok-bot/SKILL.md).
 
 ## Commands
 

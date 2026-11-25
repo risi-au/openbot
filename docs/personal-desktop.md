@@ -50,6 +50,24 @@ The Personal build card checks upstream releases and builds the fork. If a merge
 
 The fork keeps the upstream PolyForm Noncommercial license. Fork ownership does not change its use restrictions.
 
+## Slack Socket Mode
+
+The fork can use a Slack app’s Socket Mode connection in **Marketplace → Apps → Slack**. It uses the native agent assignment, Slack threads, connection status, and posting tools. The computer running OpenBot opens the connection to Slack directly.
+
+Use an app-level `xapp-` token with `connections:write` and a bot `xoxb-` token with `app_mentions:read` and `chat:write`. Enable the `app_mention` event in the Slack app and add the bot to the designated channel. Create a file readable only by your user (mode `0600`) with these fields. The standalone bridge’s existing configuration file already has these fields.
+
+```ini
+SLACK_APP_TOKEN=xapp-...
+SLACK_BOT_TOKEN=xoxb-...
+SLACK_CHANNEL_ID=C...
+SLACK_USER_ID=U...
+OPENBOT_AGENT_ID=agent-...
+```
+
+Quit OpenBot and set `OPENBOT_SLACK_SOCKET_CONFIG` to the absolute path of that file for one launch against the existing personal profile. Leave the variable unset on later launches. Stop the standalone Slack bridge before opening the new connection so only one process receives events for that app. OpenBot saves the imported connection in its encrypted credential store and reconnects on subsequent launches. The import leaves an existing relay connection for the same workspace in place. Run the import again to connect after disconnecting or to replace credentials marked invalid.
+
+The Slack card shows connection status and lets you pause, reconnect, or disconnect. Mention the bot from the configured Slack account for a thread reply. To post from an OpenBot conversation, ask your agent to use the Slack messaging tool to send your text to the configured channel. Socket Mode supports text in the configured channel. Use OpenBot for agent approvals.
+
 ## Focused verification
 
 ```sh

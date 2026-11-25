@@ -1,12 +1,13 @@
 import { execFile } from "node:child_process";
 import { randomBytes } from "node:crypto";
 import { EventEmitter } from "node:events";
-import { existsSync } from "node:fs";
-import { readdir, readFile, rm } from "node:fs/promises";
+import { constants, existsSync } from "node:fs";
+import { open, readdir, readFile, rm } from "node:fs/promises";
 import { homedir, hostname, tmpdir, userInfo } from "node:os";
-import { join, resolve } from "node:path";
+import { isAbsolute, join, resolve } from "node:path";
 import { createInterface } from "node:readline";
 import type { Readable } from "node:stream";
+import { parseEnv } from "node:util";
 import {
   isKeyOnlyProvider,
   isManagedRuntimeProvider,
@@ -821,6 +822,37 @@ interface MessagingServicesContext {
   openLink: (url: string) => Promise<void>;
 }
 
+async function loadSlackSocketImport(path: string | undefined) {
+  if (!path) return undefined;
+  if (!isAbsolute(path)) throw new Error("Use an absolute Slack Socket Mode import path.");
+  const file = await open(path, constants.O_RDONLY | constants.O_NOFOLLOW | constants.O_NONBLOCK);
+  try {
+    const stat = await file.stat();
+    const limit = 8_192;
+    if (!stat.isFile() || stat.uid !== process.getuid?.() || (stat.mode & 0o077) !== 0 || stat.size > limit)
+      throw new Error("Invalid Slack Socket Mode import file.");
+    const buffer = Buffer.alloc(limit + 1);
+    const { bytesRead } = await file.read(buffer, 0, buffer.length, 0);
+    if (bytesRead > limit) throw new Error("Slack Socket Mode import file is too large.");
+    const { SLACK_APP_TOKEN, SLACK_BOT_TOKEN, SLACK_CHANNEL_ID, SLACK_USER_ID, OPENBOT_AGENT_ID } = parseEnv(
+      buffer.subarray(0, bytesRead).toString("utf8"),
+    );
+    if (!(SLACK_APP_TOKEN && SLACK_BOT_TOKEN && SLACK_CHANNEL_ID && SLACK_USER_ID && OPENBOT_AGENT_ID))
+      throw new Error("Incomplete Slack Socket Mode import file.");
+    return {
+      credentials: {
+        botToken: SLACK_BOT_TOKEN,
+        socketAppToken: SLACK_APP_TOKEN,
+        socketChannelId: SLACK_CHANNEL_ID,
+        socketUserId: SLACK_USER_ID,
+      },
+      agentId: OPENBOT_AGENT_ID,
+    };
+  } finally {
+    await file.close();
+  }
+}
+
 async function createMessagingServices({
   teardown,
   secretCipher,
@@ -999,7 +1031,11 @@ async function createMessagingServices({
       openExternal: openLink,
     },
   });
-  void runCauseEffect(messaging.start()).catch((error) =>
+  const slackSocketImport = await loadSlackSocketImport(process.env.OPENBOT_SLACK_SOCKET_CONFIG).catch(() => {
+    logger.warn("OpenBot could not read the Slack Socket Mode import file. Use an owner-only regular file.");
+    return undefined;
+  });
+  void runCauseEffect(messaging.start(slackSocketImport)).catch((error) =>
     logger.warn("Messaging connections did not start.", toLogValue(error)),
   );
   teardown.push(TEARDOWN_ORDER.messaging, "the messaging connections", () => Effect.runPromise(messaging.stop()));

@@ -86,6 +86,7 @@ import {
 import { type SlackAppPort, SlackConnect, type SlackConnectFailed } from "./slack/slack-connect";
 import { slackOrchestratorMemories, slackOrchestratorProfile } from "./slack/slack-orchestrator";
 import { slackPingedUsers } from "./slack/slack-render";
+import { SLACK_SOCKET_APP_ID, slackSocketSettings } from "./slack/slack-socket-transport";
 import { SlackApiError, SlackWebApi } from "./slack/slack-web-api";
 import { type TelegramAppPort, telegramLinkUrl } from "./telegram/telegram-connect";
 import { telegramOrchestratorMemories, telegramOrchestratorProfile } from "./telegram/telegram-orchestrator";
@@ -248,6 +249,7 @@ export class MessagingService {
 
   readonly start = Effect.fn("MessagingService.start")(function* (
     this: MessagingService,
+    socketImport?: { credentials: Record<string, string>; agentId: string },
   ): Effect.fn.Return<void, MessagingOperationFailed> {
     if (this.#started) return;
     this.#started = true;
@@ -290,6 +292,16 @@ export class MessagingService {
       slack: (connectionId, send) => this.#outboundSlack(connectionId, send),
     });
     this.#ingress?.handle((workspaceId, delivery) => this.deliver(workspaceId, delivery));
+    if (socketImport)
+      yield* this.#importSlackSocket(socketImport.credentials, socketImport.agentId).pipe(
+        Effect.timeoutOrElse({
+          duration: "10 seconds",
+          orElse: () => Effect.fail(new MessagingOperationFailed({ cause: new Error("Slack import timed out.") })),
+        }),
+        Effect.catch(() =>
+          Effect.sync(() => logger.warn("OpenBot could not import the Slack Socket Mode connection.")),
+        ),
+      );
     const records = this.#threads.store.connections();
     yield* this.#credentials.retain(new Set(records.map((record) => record.connectionId)));
     yield* Effect.forEach(
@@ -577,7 +589,9 @@ export class MessagingService {
     const record = yield* messagingStep(() => this.#requireConnection(platform, input.workspaceId));
     const current = this.#orchestrator(record) ?? this.#platformOrchestrator(platform);
     if (current) {
-      this.#shareOrchestrator(platform, current);
+      if (record.appId === SLACK_SOCKET_APP_ID)
+        this.#threads.store.updateConnection(record.connectionId, { orchestratorAgentId: current });
+      else this.#shareOrchestrator(platform, current);
       return { agentId: current, sectionId: null };
     }
     const discord = platform === "discord";
@@ -593,7 +607,9 @@ export class MessagingService {
       .pipe(toMessagingOperationFailed);
     const memories = discord ? discordOrchestratorMemories() : slackOrchestratorMemories();
     for (const text of memories) this.#agents.createMemory({ agentId: agent.id, text });
-    this.#shareOrchestrator(platform, agent.id);
+    if (record.appId === SLACK_SOCKET_APP_ID)
+      this.#threads.store.updateConnection(record.connectionId, { orchestratorAgentId: agent.id });
+    else this.#shareOrchestrator(platform, agent.id);
     const sectionId = yield* this.#placeInIntegrations(agent.id).pipe(
       Effect.catch((failure) => {
         this.#warn(failure.cause);
@@ -667,6 +683,43 @@ export class MessagingService {
     return yield* connect.start(opensPage).pipe(toMessagingOperationFailed);
   }).bind(this);
 
+  readonly #importSlackSocket = Effect.fn("MessagingService.importSlackSocket")(function* (
+    this: MessagingService,
+    credentials: Record<string, string>,
+    agentId: string,
+  ) {
+    if (!slackSocketSettings(credentials) || !/^xoxb-[\w-]+$/u.test(credentials.botToken ?? ""))
+      return yield* new MessagingOperationFailed({ cause: new Error("Invalid Slack Socket Mode credentials.") });
+    if (!this.#agents.listAgents().some((agent) => agent.id === agentId))
+      return yield* new MessagingOperationFailed({ cause: new Error("The configured Slack agent was not found.") });
+    const driver = this.#drivers.get("slack");
+    if (!driver) return;
+    const adapter = driver.createAdapter(credentials, { connectionId: "", rateLimited: () => undefined });
+    const identity = yield* adapter.identify().pipe(toMessagingOperationFailed);
+    if (identity.missingScopes.length)
+      return yield* new MessagingOperationFailed({ cause: new Error("The Slack bot is missing permissions.") });
+    const { workspaceId, workspaceName } = identity;
+    const existing = this.#threads.store.connectionForWorkspace("slack", workspaceId);
+    if (existing) {
+      if (existing.appId !== SLACK_SOCKET_APP_ID) return;
+      const status = this.#credentials.status(existing.connectionId);
+      if (status === "unreadable" || (status === "saved" && existing.lastErrorCode !== "invalid_token")) return;
+    }
+    const record = yield* messagingStep(() => {
+      const record = this.#threads.store.ensureConnection("slack", workspaceId, workspaceName);
+      if (!existing) this.#threads.store.updateConnection(record.connectionId, { appId: SLACK_SOCKET_APP_ID });
+      return record;
+    });
+    yield* this.#credentials.set(record.connectionId, { ...credentials, workspaceId });
+    yield* messagingStep(() =>
+      this.#threads.store.updateConnection(record.connectionId, {
+        enabled: true,
+        lastErrorCode: null,
+        orchestratorAgentId: agentId,
+      }),
+    );
+  });
+
   readonly completeSlackWorkspace = Effect.fn("MessagingService.completeSlackWorkspace")(function* (
     this: MessagingService,
     nonce: string,
@@ -676,6 +729,10 @@ export class MessagingService {
     const opened = yield* connect.complete(nonce, grant).pipe(toMessagingOperationFailed);
     if (!opened) return false;
     const record = this.#threads.store.ensureConnection("slack", opened.workspaceId, opened.workspaceName);
+    if (record.appId === SLACK_SOCKET_APP_ID && this.#credentials.status(record.connectionId) !== "missing")
+      return yield* new MessagingOperationFailed({
+        cause: new Error("Disconnect the Slack Socket Mode connection before linking this workspace through OpenBot."),
+      });
     yield* this.#stopConnection(record.connectionId);
     yield* this.#credentials.set(record.connectionId, {
       botToken: opened.botToken,
@@ -702,18 +759,29 @@ export class MessagingService {
     workspaceId: string,
   ) {
     const record = yield* messagingStep(() => this.#requireConnection("slack", workspaceId));
-    const orphan = yield* this.#orphanedOrchestrator(record);
+    const values = this.#credentials.get(record.connectionId);
+    const socketMode = record.appId === SLACK_SOCKET_APP_ID;
+    const orphan = socketMode ? null : yield* this.#orphanedOrchestrator(record);
     yield* this.#stopConnection(record.connectionId);
-    const botToken = this.#credentials.get(record.connectionId)?.botToken;
+    const botToken = socketMode ? null : values?.botToken;
     if (botToken)
       yield* new SlackWebApi({ token: botToken, origin: this.#slackOrigin })
         .call("auth.revoke")
         .pipe(Effect.catch((failure) => Effect.sync(() => this.#warn(failure.cause))));
+    if (socketMode)
+      yield* messagingStep(() =>
+        this.#threads.store.updateConnection(record.connectionId, {
+          enabled: false,
+          lastErrorCode: null,
+          orchestratorAgentId: null,
+        }),
+      );
     yield* this.#credentials.clear(record.connectionId);
-    yield* messagingStep(() =>
-      this.#threads.store.updateConnection(record.connectionId, { enabled: false, lastErrorCode: null }),
-    );
-    if (this.#connect)
+    if (!socketMode)
+      yield* messagingStep(() =>
+        this.#threads.store.updateConnection(record.connectionId, { enabled: false, lastErrorCode: null }),
+      );
+    if (!socketMode && this.#connect)
       yield* this.#connect
         .unlink(workspaceId)
         .pipe(Effect.catch((failure) => Effect.sync(() => this.#warn(failure.cause))));
@@ -1072,14 +1140,19 @@ export class MessagingService {
   #platformOrchestrator(platform: MessagingPlatform): string | null {
     const agents = new Set(this.#agents.listAgents().map((agent) => agent.id));
     for (const record of this.#threads.store.connections())
-      if (record.platform === platform && record.orchestratorAgentId && agents.has(record.orchestratorAgentId))
+      if (
+        record.platform === platform &&
+        record.orchestratorAgentId &&
+        agents.has(record.orchestratorAgentId) &&
+        record.appId !== SLACK_SOCKET_APP_ID
+      )
         return record.orchestratorAgentId;
     return null;
   }
 
   #shareOrchestrator(platform: MessagingPlatform, agentId: string): void {
     for (const record of this.#threads.store.connections())
-      if (record.platform === platform && !this.#orchestrator(record))
+      if (record.platform === platform && record.appId !== SLACK_SOCKET_APP_ID && !this.#orchestrator(record))
         this.#threads.store.updateConnection(record.connectionId, { orchestratorAgentId: agentId });
   }
 
@@ -1141,10 +1214,17 @@ export class MessagingService {
     live.identity = identified.success;
     if (this.#live.get(record.connectionId) !== live) return;
     const identity = live.identity;
+    if (
+      record.appId === SLACK_SOCKET_APP_ID &&
+      (!slackSocketSettings(credentials) || identity.workspaceId !== record.workspaceId)
+    ) {
+      live.identity = null;
+      return yield* this.#setState(live, "invalid_token");
+    }
     this.#threads.store.updateConnection(record.connectionId, {
       workspaceName: identity.workspaceName,
       botUserId: identity.botUserId,
-      appId: identity.appId,
+      appId: record.appId === SLACK_SOCKET_APP_ID ? SLACK_SOCKET_APP_ID : identity.appId,
     });
     live.record = this.#threads.store.connection(record.connectionId) ?? record;
     const transport = driver.createTransport(credentials, identity);
@@ -1227,7 +1307,8 @@ export class MessagingService {
             : live.record.platform === "discord"
               ? this.#discordConnect?.unlink(live.record.workspaceId)
               : this.#connect?.unlink(live.record.workspaceId);
-      if (unlink) yield* unlink.pipe(Effect.catch((error) => Effect.sync(() => this.#warn(error.cause))));
+      if (unlink && live.record.appId !== SLACK_SOCKET_APP_ID)
+        yield* unlink.pipe(Effect.catch((error) => Effect.sync(() => this.#warn(error.cause))));
       if (state === "removed" && this.#live.get(live.record.connectionId) === live)
         yield* this.#stopConnection(live.record.connectionId);
     }
@@ -1252,6 +1333,7 @@ export class MessagingService {
       workspaceName: record.workspaceName,
       botUserId: record.botUserId,
       missingScopes: live?.identity?.missingScopes ?? [],
+      ...(record.appId === SLACK_SOCKET_APP_ID ? { socketMode: true } : {}),
       retryAt: state === "rate_limited" ? (live?.retryAt ?? null) : null,
       credentials,
       orchestratorAgentId: record.orchestratorAgentId,

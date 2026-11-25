@@ -49,6 +49,7 @@ export interface MessagingConnection {
   workspaceName: string;
   botUserId: string | null;
   missingScopes: string[];
+  socketMode?: boolean;
   retryAt: string | null;
   credentials: MessagingCredentialState;
   orchestratorAgentId: string | null;
@@ -195,6 +196,7 @@ export function isMessagingConnection(value: unknown): value is MessagingConnect
     isBoundedString(value.workspaceName, MESSAGING_LIMITS.name) &&
     isNullableBoundedString(value.botUserId, MESSAGING_LIMITS.name) &&
     isScopeList(value.missingScopes) &&
+    (value.socketMode === undefined || (value.platform === "slack" && isBoolean(value.socketMode))) &&
     isNullableBoundedString(value.retryAt, 64) &&
     isOneOf(MESSAGING_CREDENTIAL_STATES, value.credentials) &&
     (value.orchestratorAgentId === null || isIdentifier(value.orchestratorAgentId))

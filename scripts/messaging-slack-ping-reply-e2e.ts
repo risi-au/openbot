@@ -27,6 +27,7 @@ const root = await mkdtemp(join(tmpdir(), "openbot-slack-ping-"));
 const userData = join(root, "user-data");
 const home = join(root, "home");
 const WORKSPACE = "T-ping-e2e";
+const SOCKET_WORKSPACE = "TSOCKET";
 const BOT = "UBOT";
 const CHANNEL = "C-design";
 const PINGED = "UANNA";
@@ -146,7 +147,13 @@ const adapter: MessagingAdapter = {
 const driver: MessagingDriver = {
   platform: "slack",
   requiredCredential: "botToken",
-  createAdapter: () => adapter,
+  createAdapter: (values) =>
+    values.socketAppToken
+      ? {
+          ...adapter,
+          identify: () => adapter.identify().pipe(Effect.map((id) => ({ ...id, workspaceId: SOCKET_WORKSPACE }))),
+        }
+      : adapter,
   createTransport: () => ({
     start: (started) => {
       sink = started;
@@ -343,6 +350,42 @@ try {
     assert.ok(event("message", PINGED, thread, `Also ask <@${OTHER}> about it.`), "A later mention dropped a reply.");
     assert.ok(event("message", PINGED, thread, "<!here> also make it bigger"), "A room mention dropped a reply.");
     return { leadingMention: null, laterMention: "kept", roomMention: "kept" };
+  });
+
+  await step("Socket Mode uses the native status and reconnect controls and preserves its existing agent", async () => {
+    const importOptions = {
+      credentials: {
+        botToken: "xoxb-test",
+        socketAppToken: "xapp-test",
+        socketChannelId: "CSOCKET",
+        socketUserId: PINGED,
+      },
+      agentId: research.id,
+    };
+    const socketConnection = () =>
+      messaging.slackOverview().connections.find((connection) => connection.workspaceId === SOCKET_WORKSPACE);
+    await runCauseEffect(messaging.stop());
+    await runCauseEffect(messaging.start(importOptions));
+    await waitFor("connected Socket Mode status", () => (socketConnection()?.state === "connected" ? true : null));
+    assert.equal(socketConnection()?.socketMode, true);
+    assert.equal(socketConnection()?.orchestratorAgentId, research.id);
+    assert.equal(
+      messaging.slackOverview().connections.find((item) => item.workspaceId === WORKSPACE)?.socketMode,
+      undefined,
+    );
+    await runCauseEffect(messaging.setEnabled("slack", SOCKET_WORKSPACE, false));
+    await runCauseEffect(messaging.stop());
+    await runCauseEffect(messaging.start(importOptions));
+    assert.equal(socketConnection()?.state, "paused");
+    await runCauseEffect(messaging.reconnect("slack", SOCKET_WORKSPACE, false));
+    await waitFor("reconnected Socket Mode status", () => (socketConnection()?.state === "connected" ? true : null));
+    await runCauseEffect(messaging.disconnectSlackWorkspace(SOCKET_WORKSPACE));
+    assert.equal(socketConnection(), undefined);
+    assert.ok(agents.listAgents().some((agent) => agent.id === research.id));
+    await runCauseEffect(messaging.stop());
+    await runCauseEffect(messaging.start());
+    assert.equal(socketConnection(), undefined);
+    return { connected: true, pausedAcrossRestart: true, disconnectedWithoutDeletingAgent: true };
   });
 
   report.passed = true;

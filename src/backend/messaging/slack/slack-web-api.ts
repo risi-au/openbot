@@ -28,6 +28,7 @@ export class SlackApiError extends Error {
 export interface SlackWebApiOptions {
   token: string;
   origin?: string | undefined;
+  channelId?: string | undefined;
   rateLimited?(retryAt: string): void;
   delay?(milliseconds: number): Promise<void>;
 }
@@ -35,12 +36,14 @@ export interface SlackWebApiOptions {
 export class SlackWebApi {
   readonly #token: string;
   readonly #origin: string;
+  readonly #channelId: string | undefined;
   readonly #rateLimited: (retryAt: string) => void;
   readonly #delay: ((milliseconds: number) => Promise<void>) | undefined;
 
   constructor(options: SlackWebApiOptions) {
     this.#token = options.token;
     this.#origin = options.origin ?? SLACK_API_ORIGIN;
+    this.#channelId = options.channelId;
     this.#rateLimited = options.rateLimited ?? (() => undefined);
     this.#delay = options.delay;
   }
@@ -51,6 +54,8 @@ export class SlackWebApi {
     params: DynamicRecord = {},
     options: { rateLimitRetries?: number } = {},
   ) {
+    if (this.#channelId && params.channel !== undefined && params.channel !== this.#channelId)
+      return yield* slackFailure(new SlackApiError(method, "channel_not_allowed"));
     const body = new URLSearchParams();
     for (const [key, value] of Object.entries(params)) {
       if (value === undefined || value === null) continue;

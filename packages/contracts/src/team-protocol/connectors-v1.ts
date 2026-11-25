@@ -47,18 +47,21 @@ const githubRepositories = fields({
 
 const platform = oneOf("slack", "discord", "telegram");
 const messagingWorkspace = fields({ platform, workspaceId: identifier });
-const messagingConnection = fields({
-  workspaceId: identifier,
-  platform,
-  enabled: boolean,
-  state: string(64),
-  workspaceName: string(256),
-  botUserId: nullable(string(256)),
-  missingScopes: list(string(64), 32),
-  retryAt: nullable(string(64)),
-  credentials: string(64),
-  orchestratorAgentId: nullable(identifier),
-});
+const messagingConnection = fields(
+  {
+    workspaceId: identifier,
+    platform,
+    enabled: boolean,
+    state: string(64),
+    workspaceName: string(256),
+    botUserId: nullable(string(256)),
+    missingScopes: list(string(64), 32),
+    retryAt: nullable(string(64)),
+    credentials: string(64),
+    orchestratorAgentId: nullable(identifier),
+  },
+  { socketMode: boolean },
+);
 const messagingPage = fields({ url: nullable(string(4_096)), nonce: nullable(string(128)) });
 
 export const CONNECTORS_CODECS: ReadonlyMap<string, OptionalRouteCodec> = new Map([

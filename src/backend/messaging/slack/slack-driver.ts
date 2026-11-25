@@ -25,6 +25,7 @@ import { MessagingAdapterError, MessagingConnectionError } from "../messaging-ty
 import { plainText, SLACK_ACTION_IDS, slackMentionIds } from "./slack-events";
 import { SlackEventsTransport } from "./slack-events-transport";
 import { slackChunks, slackMrkdwn } from "./slack-render";
+import { type SlackSocketSettings, SlackSocketTransport, slackSocketSettings } from "./slack-socket-transport";
 import { SlackApiError, SlackWebApi } from "./slack-web-api";
 
 const { io: adapterIo } = causeHelpers(MessagingAdapterError);
@@ -71,28 +72,42 @@ class SlackAdapter implements MessagingAdapter {
   readonly #places = new Map<string, Deferred.Deferred<string>>();
   #botUserId = "";
 
-  constructor(botToken: string, options: MessagingDriverOptions & { origin?: string | undefined }) {
-    this.#api = new SlackWebApi({ token: botToken, origin: options.origin, rateLimited: options.rateLimited });
+  constructor(
+    botToken: string,
+    options: MessagingDriverOptions & { origin?: string | undefined },
+    private readonly socket: SlackSocketSettings | null,
+    private readonly invalidSocket: boolean,
+  ) {
+    this.#api = new SlackWebApi({
+      token: botToken,
+      origin: options.origin,
+      rateLimited: options.rateLimited,
+      channelId: socket?.channelId,
+    });
   }
 
   readonly identify = Effect.fnUntraced(function* (
     this: SlackAdapter,
   ): Effect.fn.Return<ConnectionIdentity, MessagingAdapterError> {
+    if (this.invalidSocket)
+      return yield* new MessagingAdapterError({ cause: new MessagingConnectionError("invalid_token") });
     const { payload, scopes } = yield* this.#api.authTest();
     const workspaceId = payload.team_id;
     const botUserId = payload.user_id;
     const botId = payload.bot_id;
     if (!isString(workspaceId) || !isString(botUserId) || !isString(botId))
       return yield* new MessagingAdapterError({ cause: new SlackApiError("auth.test", "not_a_bot_token") });
-    const bot = yield* this.#api.call("bots.info", { bot: botId });
-    const appId = isDynamicRecord(bot.bot) && isString(bot.bot.app_id) ? bot.bot.app_id : "";
+    const bot = this.socket ? null : yield* this.#api.call("bots.info", { bot: botId });
+    const appId = isDynamicRecord(bot?.bot) && isString(bot.bot.app_id) ? bot.bot.app_id : "";
     this.#botUserId = botUserId;
     return {
       workspaceId,
       workspaceName: isString(payload.team) ? payload.team : workspaceId,
       botUserId,
       appId,
-      missingScopes: SLACK_BOT_SCOPES.filter((scope) => !scopes.includes(scope)),
+      missingScopes: (this.socket ? ["app_mentions:read", "chat:write"] : SLACK_BOT_SCOPES).filter(
+        (scope) => !scopes.includes(scope),
+      ),
     };
   });
 
@@ -155,6 +170,7 @@ class SlackAdapter implements MessagingAdapter {
     reaction: StatusReaction,
     on: boolean,
   ) {
+    if (this.socket) return;
     yield* this.#api
       .call(on ? "reactions.add" : "reactions.remove", {
         channel: target.platformChannelId,
@@ -222,6 +238,7 @@ class SlackAdapter implements MessagingAdapter {
     target: MessageTarget,
     files: MessagingAnswerFile[],
   ) {
+    if (this.socket) return { skipped: files.map((file) => file.name), firstId: null };
     const skipped: string[] = [];
     const uploaded: Array<{ id: string; title: string }> = [];
     for (const file of files) {
@@ -413,6 +430,10 @@ class SlackAdapter implements MessagingAdapter {
   readonly places = Effect.fnUntraced(function* (
     this: SlackAdapter,
   ): Effect.fn.Return<MessagingPlaces, MessagingAdapterError> {
+    if (this.socket) {
+      const id = this.socket.channelId;
+      return { places: [{ id, name: yield* this.placeName(id), kind: "channel" }] };
+    }
     const places: MessagingPlace[] = [];
     let cursor: string | undefined;
     do {
@@ -435,6 +456,7 @@ class SlackAdapter implements MessagingAdapter {
   readonly joinPublicPlaces = Effect.fnUntraced(function* (
     this: SlackAdapter,
   ): Effect.fn.Return<void, MessagingAdapterError> {
+    if (this.socket) return;
     let cursor: string | undefined;
     do {
       const page = yield* this.#api.call("conversations.list", {
@@ -452,6 +474,7 @@ class SlackAdapter implements MessagingAdapter {
   });
 
   readonly joinPlace = Effect.fnUntraced(function* (this: SlackAdapter, platformChannelId: string) {
+    if (this.socket) return;
     yield* this.#api
       .call("conversations.join", { channel: platformChannelId })
       .pipe(Effect.catch((failure) => (failure.cause instanceof SlackApiError ? Effect.void : Effect.fail(failure))));
@@ -484,7 +507,7 @@ class SlackAdapter implements MessagingAdapter {
 
   #content(body: MessageBody): DynamicRecord {
     const text = this.#statusText(body.text);
-    if (!body.buttons?.length) return { text, blocks: [] };
+    if (this.socket || !body.buttons?.length) return { text, blocks: [] };
     return {
       text,
       blocks: [
@@ -518,9 +541,17 @@ export function slackDriver(options: SlackDriverOptions = {}): MessagingDriver {
     platform: "slack",
     requiredCredential: "botToken",
     createAdapter(credentials, driverOptions) {
-      return new SlackAdapter(credentials.botToken ?? "", { ...driverOptions, origin: options.origin });
+      const socket = slackSocketSettings(credentials);
+      return new SlackAdapter(
+        credentials.botToken ?? "",
+        { ...driverOptions, origin: options.origin },
+        socket,
+        credentials.socketAppToken !== undefined && !socket,
+      );
     },
-    createTransport(_credentials, identity) {
+    createTransport(credentials, identity) {
+      const socket = slackSocketSettings(credentials);
+      if (socket) return new SlackSocketTransport(identity, socket, options.origin);
       if (!options.ingress) throw new Error(sourceText("error.messaging.unsupported"));
       return new SlackEventsTransport({ identity, ingress: options.ingress });
     },

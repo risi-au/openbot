@@ -302,7 +302,7 @@ export function SlackIntegrationPanel(props: SlackIntegrationPanelProps) {
   ];
   const disconnectDeletesOrchestrator = () => {
     const connection = disconnecting();
-    const agent = connection ? slackOrchestrator(connection, props.agents) : null;
+    const agent = connection && !connection.socketMode ? slackOrchestrator(connection, props.agents) : null;
     return (
       agent !== null &&
       !props.connections.some(
@@ -311,7 +311,11 @@ export function SlackIntegrationPanel(props: SlackIntegrationPanelProps) {
     );
   };
   const disconnectAllSummary = () =>
-    t(orchestrators().length > 0 ? text().disconnectAllSummaryOrchestrator : text().disconnectAllSummary);
+    t(
+      props.connections.some((connection) => !connection.socketMode && slackOrchestrator(connection, props.agents))
+        ? text().disconnectAllSummaryOrchestrator
+        : text().disconnectAllSummary,
+    );
   const note = (connection: MessagingConnection) => {
     if (connection.missingScopes.length > 0)
       return t(text().missingScopes, { scopes: format.list(connection.missingScopes) });
@@ -320,7 +324,8 @@ export function SlackIntegrationPanel(props: SlackIntegrationPanelProps) {
         time: format.date(new Date(connection.retryAt), { hour: "numeric", minute: "2-digit" }),
       });
     const help = STATE_HELP[props.platform ?? "slack"][connection.state];
-    return help ? t(help) : t(text().workspaceDescription);
+    if (help) return t(help);
+    return t(connection.socketMode ? "connector.slack.socketModeDescription" : text().workspaceDescription);
   };
   const disconnectingName = () => disconnecting()?.workspaceName ?? "";
   const disconnectDescription = () =>

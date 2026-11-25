@@ -26,6 +26,10 @@ import { decodeRecord, nullableString } from "@openbot/contracts/ipc-decoding";
 import { CONNECTORS_CAPABILITY, CONNECTORS_ROUTES } from "@openbot/contracts/team-protocol/connectors-v1";
 import type { TeamCurrentCapability } from "@openbot/contracts/team-protocol/current";
 import { DISCORD_ACCESS_CAPABILITY, DISCORD_ACCESS_ROUTES } from "@openbot/contracts/team-protocol/discord-access-v1";
+import {
+  SLACK_SOCKET_CHANNELS_CAPABILITY,
+  SLACK_SOCKET_CHANNELS_ROUTE,
+} from "@openbot/contracts/team-protocol/slack-socket-channels-v1";
 import type { TeamProtocolV2Json } from "@openbot/contracts/team-protocol/v2";
 import {
   WHATSAPP_CONNECTOR_CAPABILITY,
@@ -71,6 +75,7 @@ import {
   parseSetWhatsAppStatusReactionsInput,
   parseSetWhatsAppWorkingMessageInput,
   parseStartWhatsAppLinkInput,
+  parseUpdateSlackSocketChannelInput,
   parseWhatsAppSenderInput,
 } from "./messaging-inputs";
 import { scopedHandler, scopedQueryHandler } from "./scoped-handler";
@@ -79,6 +84,7 @@ interface MessagingIpcDependencies {
   messaging: Pick<
     MessagingService,
     | "slackOverview"
+    | "updateSlackSocketChannel"
     | "connectSlackWorkspace"
     | "disconnectSlackWorkspace"
     | "discordOverview"
@@ -375,6 +381,14 @@ export function messagingIpcHandlers({
         local: ({ workspaceId }) => runCauseEffect(messaging.listDiscordRoles(workspaceId)),
         remote: ({ workspaceId }, serverId) =>
           postAccess(serverId, DISCORD_ACCESS_ROUTES.roles, decodeDiscordRoles, { workspaceId }),
+      }),
+      hostUpdateSlackSocketChannel: scopedHandler(parseUpdateSlackSocketChannelInput, {
+        local: (input) => runCauseEffect(messaging.updateSlackSocketChannel(input)),
+        remote: async (input, serverId) => {
+          if (!remoteServers.supportsCapability(serverId, SLACK_SOCKET_CHANNELS_CAPABILITY))
+            throw new Error(sourceText("error.team.connectorsUnsupported"));
+          await post(serverId, SLACK_SOCKET_CHANNELS_ROUTE, decodeEmpty, { ...input });
+        },
       }),
       hostSetDiscordAccess: scopedHandler(parseSetDiscordAccessInput, {
         local: (input) => runCauseEffect(messaging.setDiscordAccess(input)),

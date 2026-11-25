@@ -7,6 +7,7 @@ import type {
   MessagingOverview,
   MessagingRole,
 } from "@openbot/contracts/ipc";
+import { LOCAL_SERVER_ID, type UpdateSlackSocketChannelInput } from "@openbot/contracts/ipc";
 import { sourceText } from "@openbot/i18n/source";
 import type { AgentProfile } from "@openbot/ui/data";
 import type {
@@ -38,6 +39,7 @@ export interface MessagingApi {
     target: MessagingOrchestratorTarget,
     choice: SlackOrchestratorChoice | null,
   ) => Promise<AddMessagingOrchestratorResult>;
+  updateSlackSocketChannel: (input: UpdateSlackSocketChannelInput) => Promise<void>;
   discordAccess: (workspaceId: string) => Promise<DiscordAccess>;
   discordRoles: (workspaceId: string) => Promise<DiscordRoleList>;
   setDiscordAccess: (workspaceId: string, allowedRoles: MessagingRole[]) => Promise<DiscordAccess>;
@@ -81,6 +83,7 @@ export function localMessagingApi(messaging: () => MessagingDesktopApi = () => w
         : target.platform === "slack"
           ? messaging().addSlackOrchestrator({ workspaceId: target.workspaceId, ...(choice ?? {}) })
           : messaging().addDiscordOrchestrator({ workspaceId: target.workspaceId, ...(choice ?? {}) }),
+    updateSlackSocketChannel: (input) => messaging().hostUpdateSlackSocketChannel(input, LOCAL_SERVER_ID),
     discordAccess: (workspaceId) => messaging().getDiscordAccess({ workspaceId }),
     discordRoles: (workspaceId) => messaging().listDiscordRoles({ workspaceId }),
     setDiscordAccess: (workspaceId, allowedRoles) => messaging().setDiscordAccess({ workspaceId, allowedRoles }),
@@ -327,6 +330,8 @@ export function createMessagingConnector(
         onReconnect: shared.reconnect,
         onSetEnabled: shared.setEnabled,
         onAddOrchestrator: (workspaceId, choice) => addOrchestrator({ platform, workspaceId }, choice),
+        onUpdateSlackSocketChannel: (input, done) =>
+          actions.run(() => api.updateSlackSocketChannel(input), { done, settled: reload }),
         access: platform === "discord" ? discordAccess : undefined,
       },
     },

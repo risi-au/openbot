@@ -1,3 +1,4 @@
+import { isSlackSocketChannelList } from "@openbot/contracts/ipc";
 import { isDynamicRecord, isString } from "@openbot/contracts/runtime-values";
 import { Effect } from "effect";
 import WebSocket from "ws";
@@ -10,19 +11,19 @@ export const SLACK_SOCKET_APP_ID = "socket-mode";
 
 export interface SlackSocketSettings {
   appToken: string;
-  channelId: string;
+  channelIds: readonly string[];
   userId: string;
 }
 
 export function slackSocketSettings(credentials: Record<string, string>): SlackSocketSettings | null {
-  const { socketAppToken, socketChannelId, socketUserId } = credentials;
+  const { socketAppToken, socketChannelId, socketChannelIds, socketUserId } = credentials;
+  const channels = socketChannelIds === undefined ? [socketChannelId] : socketChannelIds.split(",");
   return /^xapp-[\w-]+$/u.test(socketAppToken ?? "") &&
-    /^[CG][A-Z0-9]+$/u.test(socketChannelId ?? "") &&
+    isSlackSocketChannelList(channels) &&
     /^[UW][A-Z0-9]+$/u.test(socketUserId ?? "") &&
     socketAppToken &&
-    socketChannelId &&
     socketUserId
-    ? { appToken: socketAppToken, channelId: socketChannelId, userId: socketUserId }
+    ? { appToken: socketAppToken, channelIds: channels, userId: socketUserId }
     : null;
 }
 
@@ -40,6 +41,7 @@ export class SlackSocketTransport implements MessagingTransport {
     origin?: string,
     private readonly connectSocket = (url: URL) =>
       new WebSocket(url, { handshakeTimeout: 10_000, maxPayload: 1024 * 1024 }),
+    private readonly channels = () => settings.channelIds,
   ) {
     this.#api = new SlackWebApi({ token: settings.appToken, origin });
   }
@@ -157,7 +159,8 @@ export class SlackSocketTransport implements MessagingTransport {
       payload.is_ext_shared_channel === true ||
       !isDynamicRecord(event) ||
       event.type !== "app_mention" ||
-      event.channel !== this.settings.channelId ||
+      !isString(event.channel) ||
+      !this.channels().includes(event.channel) ||
       event.user !== this.settings.userId ||
       !isString(event.text) ||
       !event.text.includes(`<@${this.identity.botUserId}>`) ||

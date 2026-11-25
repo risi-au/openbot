@@ -6,6 +6,7 @@ import {
   type MessagingRole,
   parseWhatsAppPhoneNumber,
   type StartWhatsAppLinkInput,
+  type UpdateSlackSocketChannelInput,
   type WhatsAppAccount,
   type WhatsAppGroup,
   type WhatsAppLinkState,
@@ -86,6 +87,14 @@ export function createMockMessaging(orchestrator: () => string): MessagingDeskto
         const agentId = orchestrator();
         change(workspaceId, { orchestratorAgentId: agentId });
         return { agentId, sectionId: null };
+      },
+      updateSocketChannel: async ({ workspaceId, channelId, action }: UpdateSlackSocketChannelInput) => {
+        const workspace = connections.get(workspaceId);
+        if (!workspace?.socketChannelIds) throw new Error("Slack Socket Mode is unavailable.");
+        const channels = new Set(workspace.socketChannelIds);
+        if (action === "add") channels.add(channelId);
+        else channels.delete(channelId);
+        if (channels.size) change(workspaceId, { socketChannelIds: [...channels] });
       },
       connected: (workspaceId: string) => {
         if (!connections.has(workspaceId)) throw new Error(notConnected);
@@ -361,6 +370,7 @@ export function createMockMessaging(orchestrator: () => string): MessagingDeskto
     hostGetDiscordAccess: (input) => api.getDiscordAccess(input),
     hostListDiscordRoles: (input) => api.listDiscordRoles(input),
     hostSetDiscordAccess: (input) => api.setDiscordAccess(input),
+    hostUpdateSlackSocketChannel: slack.updateSocketChannel,
     hostGetWhatsAppOverview: () => api.getWhatsAppOverview(),
     hostStartWhatsAppLink: (input) => api.startWhatsAppLink(input),
     hostGetWhatsAppLinkState: () => api.getWhatsAppLinkState(),

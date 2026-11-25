@@ -259,6 +259,7 @@ import {
   type UpdateCustomProviderInput,
   type UpdateHostIdentityInput,
   type UpdateRestartMode,
+  type UpdateSlackSocketChannelInput,
   type VaultHostImportResult,
   type VaultSaveInput,
   type VaultState,
@@ -409,6 +410,7 @@ import { SIDEBAR_PINS_ROUTES } from "@openbot/contracts/team-protocol/sidebar-pi
 import { SIGN_IN_RELAY_ROUTES } from "@openbot/contracts/team-protocol/sign-in-relay-v1";
 import { SKILL_LEARNING_ROUTES } from "@openbot/contracts/team-protocol/skill-learning-v1";
 import { SKILLS_ADMIN_ROUTES } from "@openbot/contracts/team-protocol/skills-admin-v1";
+import { SLACK_SOCKET_CHANNELS_ROUTE } from "@openbot/contracts/team-protocol/slack-socket-channels-v1";
 import { STORAGE_CHANNEL_ROUTES } from "@openbot/contracts/team-protocol/storage-channel-v1";
 import { STORAGE_ROUTES } from "@openbot/contracts/team-protocol/storage-v1";
 import type { TeamProtocolV2Json } from "@openbot/contracts/team-protocol/v2";
@@ -2267,6 +2269,10 @@ export function messagingConnectorDisconnect(
 ): Effect.Effect<void, TeamAdminRequestError> {
   return adminCall(() => request("POST", CONNECTORS_ROUTES.messagingDisconnect, ignoreResponse, { ...input }));
 }
+export function updateSlackSocketChannel(request: TeamApiRequest, input: UpdateSlackSocketChannelInput) {
+  return adminCall(() => request("POST", SLACK_SOCKET_CHANNELS_ROUTE, ignoreResponse, { ...input }));
+}
+
 export function messagingConnectorSetEnabled(
   request: TeamApiRequest,
   input: HostSetMessagingEnabledInput,

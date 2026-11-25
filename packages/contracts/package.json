@@ -199,6 +199,7 @@
     "./team-protocol/feedback-withdraw-v1": "./src/team-protocol/feedback-withdraw-v1.ts",
     "./team-protocol/provider-default-v1": "./src/team-protocol/provider-default-v1.ts",
     "./team-protocol/discord-access-v1": "./src/team-protocol/discord-access-v1.ts",
+    "./team-protocol/slack-socket-channels-v1": "./src/team-protocol/slack-socket-channels-v1.ts",
     "./team-protocol/whatsapp-working-message-v1": "./src/team-protocol/whatsapp-working-message-v1.ts",
     "./team-protocol/whatsapp-status-reactions-v1": "./src/team-protocol/whatsapp-status-reactions-v1.ts",
     "./team-protocol/whatsapp-read-only-v1": "./src/team-protocol/whatsapp-read-only-v1.ts",

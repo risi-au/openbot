@@ -13,6 +13,7 @@ export type HostMessagingApi = Pick<
   | "hostGetDiscordAccess"
   | "hostListDiscordRoles"
   | "hostSetDiscordAccess"
+  | "hostUpdateSlackSocketChannel"
 >;
 
 export function hostMessagingApi(
@@ -41,6 +42,7 @@ export function hostMessagingApi(
           id,
         ),
       ),
+    updateSlackSocketChannel: (input) => call((api, id) => api.hostUpdateSlackSocketChannel(input, id)),
     discordAccess: (workspaceId) => call((api, id) => api.hostGetDiscordAccess({ workspaceId }, id)),
     discordRoles: (workspaceId) => call((api, id) => api.hostListDiscordRoles({ workspaceId }, id)),
     setDiscordAccess: (workspaceId, allowedRoles) =>

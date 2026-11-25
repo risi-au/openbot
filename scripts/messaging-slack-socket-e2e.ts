@@ -5,18 +5,22 @@ import type { InboundMessage } from "../src/backend/messaging/messaging-types";
 import { slackDriver } from "../src/backend/messaging/slack/slack-driver";
 import { SlackSocketTransport } from "../src/backend/messaging/slack/slack-socket-transport";
 
-const settings = { appToken: "xapp-testing", channelId: "CTEST", userId: "UALLOWED" };
+const channelId = "CTEST";
+const secondChannelId = "CSECOND";
+let channels = [channelId, secondChannelId];
+const settings = { appToken: "xapp-testing", channelIds: [channelId], userId: "UALLOWED" };
 const botToken = "xoxb-testing";
 const workspaceId = "TTEST";
 const botUserId = "UBOT";
 const posts: URLSearchParams[] = [];
 const acknowledgements: string[] = [];
 const envelopes = [
-  ["accept", settings.channelId, settings.userId, workspaceId, "EvAllowed"],
-  ["duplicate", settings.channelId, settings.userId, workspaceId, "EvAllowed"],
-  ["wrong-author", settings.channelId, "UOTHER", workspaceId, "EvOther"],
+  ["accept", channelId, settings.userId, workspaceId, "EvAllowed"],
+  ["duplicate", channelId, settings.userId, workspaceId, "EvAllowed"],
+  ["second-channel", secondChannelId, settings.userId, workspaceId, "EvSecondChannel"],
+  ["wrong-author", channelId, "UOTHER", workspaceId, "EvOther"],
   ["wrong-channel", "COTHER", settings.userId, workspaceId, "EvOtherChannel"],
-  ["wrong-workspace", settings.channelId, settings.userId, "TOTHER", "EvOtherWorkspace"],
+  ["wrong-workspace", channelId, settings.userId, "TOTHER", "EvOtherWorkspace"],
 ];
 
 const server = Bun.serve({
@@ -46,6 +50,7 @@ const server = Bun.serve({
   },
   websocket: {
     open(socket) {
+      socket.subscribe("additional-events");
       socket.send(JSON.stringify({ type: "hello" }));
       for (const [envelopeId, channel, user, teamId, eventId] of envelopes)
         socket.send(
@@ -70,8 +75,18 @@ const server = Bun.serve({
 const origin = server.url.origin;
 const driver = slackDriver({ origin });
 const adapter = driver.createAdapter(
-  { botToken, socketAppToken: settings.appToken, socketChannelId: settings.channelId, socketUserId: settings.userId },
-  { connectionId: "test", rateLimited: () => {} },
+  { botToken, socketAppToken: settings.appToken, socketChannelId: channelId, socketUserId: settings.userId },
+  {
+    connectionId: "test",
+    rateLimited: () => {},
+    readCredentials: () => ({
+      botToken,
+      socketAppToken: settings.appToken,
+      socketChannelId: channelId,
+      socketChannelIds: channels.join(","),
+      socketUserId: settings.userId,
+    }),
+  },
 );
 let transport: SlackSocketTransport | undefined;
 try {
@@ -80,12 +95,18 @@ try {
   assert.deepEqual(identity.missingScopes, []);
   const messages: InboundMessage[] = [];
   const states: string[] = [];
-  transport = new SlackSocketTransport(identity, settings, origin, (url) => {
-    assert.equal(url.host, "wss-primary.slack.com");
-    const local = new URL("/socket", origin);
-    local.protocol = "ws:";
-    return new WebSocket(local);
-  });
+  transport = new SlackSocketTransport(
+    identity,
+    settings,
+    origin,
+    (url) => {
+      assert.equal(url.host, "wss-primary.slack.com");
+      const local = new URL("/socket", origin);
+      local.protocol = "ws:";
+      return new WebSocket(local);
+    },
+    () => channels,
+  );
   transport.start({
     state: (state) => states.push(state),
     message: (message) => messages.push(message),
@@ -101,25 +122,56 @@ try {
     envelopes.map(([id]) => id),
   );
   assert.deepEqual(states, ["connecting", "connected"]);
-  assert.equal(messages.length, 1);
+  assert.equal(messages.length, 2);
+  assert.equal(messages[1]?.platformChannelId, secondChannelId);
   assert.equal(messages[0]?.text.trim(), "hello");
-  assert.deepEqual(messages[0]?.target, { platformChannelId: settings.channelId, replyThreadId: "1764116111.000100" });
+  assert.deepEqual(messages[0]?.target, { platformChannelId: channelId, replyThreadId: "1764116111.000100" });
   assert.equal(
-    await Effect.runPromise(
-      adapter.post({ platformChannelId: settings.channelId, replyThreadId: null }, { text: "hello" }),
-    ),
+    await Effect.runPromise(adapter.post({ platformChannelId: channelId, replyThreadId: null }, { text: "hello" })),
     "1764116111.000200",
   );
+  await Effect.runPromise(adapter.post({ platformChannelId: secondChannelId, replyThreadId: null }, { text: "hello" }));
+  channels = [channelId];
+  server.publish(
+    "additional-events",
+    JSON.stringify({
+      type: "events_api",
+      envelope_id: "after-removal",
+      payload: {
+        type: "event_callback",
+        team_id: workspaceId,
+        event_id: "EvRemovedChannel",
+        event: {
+          type: "app_mention",
+          ts: "1764116112.000100",
+          text: "<@UBOT> hello",
+          channel: secondChannelId,
+          user: settings.userId,
+        },
+      },
+    }),
+  );
+  const removalDeadline = Date.now() + 5_000;
+  while (!acknowledgements.includes("after-removal")) {
+    if (Date.now() > removalDeadline) assert.fail("Timed out waiting for the removed channel's acknowledgement");
+    await Bun.sleep(10);
+  }
+  assert.equal(messages.length, 2);
+  assert.deepEqual(states, ["connecting", "connected"]);
+  const removed = await Effect.runPromise(
+    Effect.result(adapter.post({ platformChannelId: secondChannelId, replyThreadId: null }, { text: "hello" })),
+  );
+  assert.equal(removed._tag, "Failure");
   const rejected = await Effect.runPromise(
     Effect.result(adapter.post({ platformChannelId: "COTHER", replyThreadId: null }, { text: "hello" })),
   );
   assert.equal(rejected._tag, "Failure");
   assert.deepEqual(
     posts.map((post) => post.get("channel")),
-    [settings.channelId],
+    [channelId, secondChannelId],
   );
   process.stdout.write(
-    "Slack Socket Mode acknowledged all envelopes, delivered one allowed mention, and confined outbound posts.\n",
+    "Slack Socket Mode acknowledged all envelopes, delivered mentions in both approved channels, and confined outbound posts.\n",
   );
 } finally {
   if (transport) await Effect.runPromise(transport.stop());

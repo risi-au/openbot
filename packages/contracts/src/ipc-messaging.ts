@@ -41,6 +41,46 @@ export const MESSAGING_LIMITS = {
   roleName: 100,
 } as const;
 
+export const SLACK_SOCKET_CHANNEL_LIMIT = 64;
+
+const SLACK_CHANNEL_ID = /^[CG][A-Z0-9]{1,63}$/u;
+
+export function isSlackChannelId(value: unknown): value is string {
+  return typeof value === "string" && SLACK_CHANNEL_ID.test(value);
+}
+
+export function slackChannelIdFromInput(value: string): string | null {
+  const trimmed = value.trim();
+  if (SLACK_CHANNEL_ID.test(trimmed)) return trimmed;
+  if (trimmed.length > 512) return null;
+  const url = URL.parse(trimmed);
+  if (url?.protocol !== "https:" || url.username || url.password || url.port) return null;
+  const parts = url.pathname.split("/");
+  const channelId =
+    url.hostname === "app.slack.com" && parts[1] === "client"
+      ? parts[3]
+      : url.hostname.endsWith(".slack.com") && parts[1] === "archives"
+        ? parts[2]
+        : undefined;
+  return isSlackChannelId(channelId) ? channelId : null;
+}
+
+export function isSlackSocketChannelList(value: unknown): value is string[] {
+  return (
+    Array.isArray(value) &&
+    value.length > 0 &&
+    value.length <= SLACK_SOCKET_CHANNEL_LIMIT &&
+    value.every(isSlackChannelId) &&
+    new Set(value).size === value.length
+  );
+}
+
+export interface UpdateSlackSocketChannelInput {
+  workspaceId: string;
+  channelId: string;
+  action: "add" | "remove";
+}
+
 export interface MessagingConnection {
   workspaceId: string;
   platform: MessagingPlatform;
@@ -50,6 +90,7 @@ export interface MessagingConnection {
   botUserId: string | null;
   missingScopes: string[];
   socketMode?: boolean;
+  socketChannelIds?: string[];
   retryAt: string | null;
   credentials: MessagingCredentialState;
   orchestratorAgentId: string | null;
@@ -197,6 +238,8 @@ export function isMessagingConnection(value: unknown): value is MessagingConnect
     isNullableBoundedString(value.botUserId, MESSAGING_LIMITS.name) &&
     isScopeList(value.missingScopes) &&
     (value.socketMode === undefined || (value.platform === "slack" && isBoolean(value.socketMode))) &&
+    (value.socketChannelIds === undefined ||
+      (value.platform === "slack" && value.socketMode === true && isSlackSocketChannelList(value.socketChannelIds))) &&
     isNullableBoundedString(value.retryAt, 64) &&
     isOneOf(MESSAGING_CREDENTIAL_STATES, value.credentials) &&
     (value.orchestratorAgentId === null || isIdentifier(value.orchestratorAgentId))

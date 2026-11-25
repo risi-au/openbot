@@ -208,6 +208,7 @@ import { SKILL_LEARNING_CAPABILITY } from "./skill-learning-v1";
 import { SKILL_PROBLEMS_CAPABILITY } from "./skill-problems-v1";
 import { SKILLS_ADMIN_CAPABILITY } from "./skills-admin-v1";
 import { SKILLS_EVENTS_CAPABILITY } from "./skills-events-v1";
+import { SLACK_SOCKET_CHANNELS_CAPABILITY } from "./slack-socket-channels-v1";
 import { STORAGE_CHANNEL_CAPABILITY } from "./storage-channel-v1";
 import { STORAGE_DISK_CAPABILITY } from "./storage-disk-v1";
 import { STORAGE_USER_FILES_CAPABILITY } from "./storage-user-files-v1";
@@ -849,6 +850,7 @@ const TEAM_CAPABILITY_REGISTRY = [
   [PUSH_NOTIFICATION_WORKFLOWS_CAPABILITY, V10],
   [TEAM_PROMPT_DETAIL_CAPABILITY, V10],
   [HOST_TURN_LIMITS_EVENTS_CAPABILITY, V10],
+  [SLACK_SOCKET_CHANNELS_CAPABILITY, V10],
 ] as const satisfies readonly (readonly [string, TeamCapabilityPlacement])[];
 
 export const TEAM_CURRENT_CAPABILITIES = TEAM_CAPABILITY_REGISTRY.map(([capability]) => capability);

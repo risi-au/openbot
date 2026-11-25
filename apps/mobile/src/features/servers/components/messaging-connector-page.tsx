@@ -3,12 +3,16 @@ import {
   MESSAGING_LIMITS,
   type MessagingConnection,
   type MessagingOverview,
+  SLACK_SOCKET_CHANNEL_LIMIT,
+  slackChannelIdFromInput,
+  type UpdateSlackSocketChannelInput,
 } from "@openbot/contracts/ipc";
 import type { MessagingConnectorPage as HostPage } from "@openbot/team-client/team-admin-requests";
 import type { UseQueryResult } from "@tanstack/react-query";
 import { openAuthSessionAsync } from "expo-web-browser";
 import { Typography } from "heroui-native";
-import { Alert, Linking } from "react-native";
+import { useState } from "react";
+import { Alert, Linking, View } from "react-native";
 import { useUniwind } from "uniwind";
 import { BloubAvatarThumbnail } from "@/features/agents/components/bloub-avatar";
 import { ConnectorError, ConnectorHeader, ConnectorLoading } from "@/features/servers/components/connector-header";
@@ -32,6 +36,7 @@ import { SettingsContent, SettingsRow, SettingsSection } from "@/features/settin
 import { SettingsSwitch } from "@/features/settings/components/settings-controls";
 import { useMobileWorkspaceActions } from "@/features/workspace/context/mobile-workspace-context";
 import type { MobileAgent, MobileServer } from "@/features/workspace/model/workspace-types";
+import { SheetFormField } from "@/shared/components/sheet-form-field";
 import { currentText, type MobileText, useText } from "@/shared/lib/text";
 
 const TITLE_KEYS = {
@@ -136,6 +141,7 @@ export function MessagingConnectorPage({
     reconnectMessaging,
     disconnectMessaging,
     setMessagingEnabled,
+    updateSlackSocketChannel,
     addMessagingOrchestrator,
   } = useMobileWorkspaceActions();
   const action = useConnectorAction(query.refetch);
@@ -301,6 +307,19 @@ export function MessagingConnectorPage({
             >
               <Typography.Paragraph>{name}</Typography.Paragraph>
             </SettingsRow>
+            {connection.socketChannelIds ? (
+              <SlackSocketChannels
+                workspaceId={connection.workspaceId}
+                channelIds={connection.socketChannelIds}
+                busy={action.busy}
+                onUpdate={(input, done) =>
+                  void action.perform(async () => {
+                    await updateSlackSocketChannel(input, server.id);
+                    done?.();
+                  })
+                }
+              />
+            ) : null}
             {kind === "live" || kind === "paused" ? (
               <SettingsRow>
                 <SettingsSwitch
@@ -436,5 +455,64 @@ export function MessagingConnectorPage({
         </SettingsSection>
       )}
     </SettingsContent>
+  );
+}
+
+function SlackSocketChannels({
+  workspaceId,
+  channelIds,
+  busy,
+  onUpdate,
+}: {
+  workspaceId: string;
+  channelIds: string[];
+  busy: boolean;
+  onUpdate: (input: UpdateSlackSocketChannelInput, done?: () => void) => void;
+}) {
+  const { t } = useText();
+  const [input, setInput] = useState("");
+  const id = slackChannelIdFromInput(input);
+  return (
+    <>
+      {channelIds.map((channelId) => (
+        <SettingsRow
+          key={channelId}
+          disclosure={false}
+          disabled={busy || channelIds.length === 1}
+          onPress={() => onUpdate({ workspaceId, channelId, action: "remove" })}
+          accessibilityLabel={t("mobile.server.connectors.slack.removeSocketChannelLabel", { channelId })}
+          trailing={
+            <Typography.Paragraph type="body-xs">
+              {t("mobile.server.connectors.slack.removeSocketChannel")}
+            </Typography.Paragraph>
+          }
+        >
+          <Typography.Paragraph>{channelId}</Typography.Paragraph>
+        </SettingsRow>
+      ))}
+      <View className="px-4">
+        <SheetFormField
+          label={t("mobile.server.connectors.slack.socketChannelInput")}
+          autoCapitalize="none"
+          autoCorrect={false}
+          editable={!busy}
+          maxLength={512}
+          value={input}
+          onChangeText={setInput}
+        />
+      </View>
+      <SettingsRow
+        disclosure={false}
+        disabled={busy || !id || channelIds.includes(id) || channelIds.length >= SLACK_SOCKET_CHANNEL_LIMIT}
+        onPress={() => {
+          if (id) onUpdate({ workspaceId, channelId: id, action: "add" }, () => setInput(""));
+        }}
+        supportingText={t("mobile.server.connectors.slack.socketChannelsDescription")}
+      >
+        <Typography.Paragraph className="text-accent">
+          {t("mobile.server.connectors.slack.addSocketChannel")}
+        </Typography.Paragraph>
+      </SettingsRow>
+    </>
   );
 }

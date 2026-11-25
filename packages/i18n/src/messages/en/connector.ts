@@ -84,7 +84,14 @@ export const messages = defineMessages("connector", {
   "connector.slack.actionFailed": "Slack did not accept the change",
   "connector.slack.workspaceTitle": "Workspaces",
   "connector.slack.socketModeDescription":
-    "Socket Mode connects directly to Slack. Mention the bot in your configured channel.",
+    "Socket Mode connects directly to Slack. Mention the bot in an approved channel.",
+  "connector.slack.socketChannelsTitle": "Channels in {workspace}",
+  "connector.slack.socketChannelsDescription":
+    "Invite the Slack bot to each channel you add. OpenBot agents can post and receive mentions in these channels.",
+  "connector.slack.socketChannelInput": "Slack channel link or ID",
+  "connector.slack.addSocketChannel": "Add channel",
+  "connector.slack.removeSocketChannel": "Remove",
+  "connector.slack.removeSocketChannelLabel": "Remove Slack channel {channelId}",
   "connector.slack.workspaceDescription": "People mention @OpenBot or send it a direct message.",
   "connector.slack.disconnectWorkspace": "Disconnect",
   "connector.slack.disconnectAllTitle": "Disconnect Slack",

@@ -253,6 +253,7 @@ import {
   clientBrowserCommandEvent,
 } from "@openbot/contracts/team-protocol/client-browser-v1";
 import { CODEX_API_KEY_CAPABILITY } from "@openbot/contracts/team-protocol/codex-api-key-v1";
+import { CONNECTORS_CAPABILITY, CONNECTORS_ROUTES } from "@openbot/contracts/team-protocol/connectors-v1";
 import {
   CONTEXT_COMPACT_CAPABILITY,
   CONTEXT_COMPACT_ROUTES,
@@ -477,6 +478,10 @@ import { SIDEBAR_PINS_CAPABILITY, SIDEBAR_PINS_ROUTES } from "@openbot/contracts
 import { SKILL_LEARNING_CAPABILITY, SKILL_LEARNING_ROUTES } from "@openbot/contracts/team-protocol/skill-learning-v1";
 import { SKILL_PROBLEMS_CAPABILITY } from "@openbot/contracts/team-protocol/skill-problems-v1";
 import { SKILLS_ADMIN_CAPABILITY, SKILLS_ADMIN_ROUTES } from "@openbot/contracts/team-protocol/skills-admin-v1";
+import {
+  SLACK_SOCKET_CHANNELS_CAPABILITY,
+  SLACK_SOCKET_CHANNELS_ROUTE,
+} from "@openbot/contracts/team-protocol/slack-socket-channels-v1";
 import { STORAGE_DISK_CAPABILITY, STORAGE_DISK_ROUTES } from "@openbot/contracts/team-protocol/storage-disk-v1";
 import {
   STORAGE_USER_FILES_CAPABILITY,
@@ -2336,8 +2341,32 @@ const whatsappAccount: WhatsAppAccount = {
   pendingRequests: [{ code: "K7Q2ZP", senderId: "48600100400", name: "Ola", expiresAt: "2026-11-03T21:00:00.000Z" }],
 };
 let whatsappLinkError: WhatsAppLinkState["error"] = null;
+const slackSocketChannelIds = new Set(["COLD"]);
 const whatsappMessaging: TeamApiConnectors["messaging"] = {
-  slackOverview: unused("slackOverview"),
+  slackOverview: () => ({
+    connections: [
+      {
+        workspaceId: "TSOCKET",
+        platform: "slack",
+        enabled: true,
+        state: "connected",
+        workspaceName: "Socket Mode Workspace",
+        botUserId: "UBOT",
+        missingScopes: [],
+        retryAt: null,
+        credentials: "saved",
+        orchestratorAgentId: null,
+        socketMode: true,
+        socketChannelIds: [...slackSocketChannelIds],
+      },
+    ],
+  }),
+  updateSlackSocketChannel: ({ action, channelId }) =>
+    Effect.sync(() => {
+      if (action === "add") slackSocketChannelIds.add(channelId);
+      else slackSocketChannelIds.delete(channelId);
+      return undefined;
+    }),
   discordOverview: unused("discordOverview"),
   telegramOverview: unused("telegramOverview"),
   connectSlackWorkspace: unused("connectSlackWorkspace"),
@@ -11241,6 +11270,46 @@ try {
         whatsappAccount.statusReactions === true &&
         asClient(restored).numbers[0]?.statusReactions === true,
       [summary(on), summary(restored)],
+    );
+  }
+
+  {
+    const v10 = {
+      capabilities: [CONNECTORS_CAPABILITY, SLACK_SOCKET_CHANNELS_CAPABILITY],
+      protocol: TEAM_PROTOCOL_V10,
+    };
+    const older = { capabilities: [CONNECTORS_CAPABILITY], protocol: TEAM_PROTOCOL_V9 };
+    const input = { workspaceId: "TSOCKET", channelId: "CNEW", action: "add" };
+    const before = await call("POST", CONNECTORS_ROUTES.messagingOverview, {
+      token: adaToken,
+      json: { platform: "slack" },
+      ...v10,
+    });
+    const refused = await call("POST", SLACK_SOCKET_CHANNELS_ROUTE, { token: bobToken, json: input, ...v10 });
+    const unsupported = await call("POST", SLACK_SOCKET_CHANNELS_ROUTE, { token: adaToken, json: input, ...older });
+    const added = await call("POST", SLACK_SOCKET_CHANNELS_ROUTE, { token: adaToken, json: input, ...v10 });
+    const after = await call("POST", CONNECTORS_ROUTES.messagingOverview, {
+      token: adaToken,
+      json: { platform: "slack" },
+      ...v10,
+    });
+    const compatibility = await call("POST", CONNECTORS_ROUTES.messagingOverview, {
+      token: adaToken,
+      json: { platform: "slack" },
+      ...older,
+    });
+    check(
+      "Slack Socket Mode channel updates require an admin and the new capability",
+      before.status === 200 &&
+        !JSON.stringify(before.body).includes("CNEW") &&
+        refused.status === 403 &&
+        unsupported.status === 400 &&
+        added.status === 200 &&
+        after.status === 200 &&
+        JSON.stringify(after.body).includes('"socketChannelIds":["COLD","CNEW"]') &&
+        compatibility.status === 200 &&
+        !JSON.stringify(compatibility.body).includes("socketChannelIds"),
+      [summary(before), summary(refused), summary(unsupported), summary(added), summary(after), summary(compatibility)],
     );
   }
 

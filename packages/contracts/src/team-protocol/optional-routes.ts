@@ -154,6 +154,7 @@ import { SIGN_IN_RELAY_DEEP_LINK_CODECS } from "./sign-in-relay-deep-link-v1";
 import { SIGN_IN_RELAY_CODECS } from "./sign-in-relay-v1";
 import { SKILL_LEARNING_CODECS } from "./skill-learning-v1";
 import { SKILLS_ADMIN_CODECS } from "./skills-admin-v1";
+import { SLACK_SOCKET_CHANNELS_CODEC, SLACK_SOCKET_CHANNELS_ROUTE } from "./slack-socket-channels-v1";
 import { STORAGE_CHANNEL_CODECS } from "./storage-channel-v1";
 import { STORAGE_DISK_CODECS } from "./storage-disk-v1";
 import { STORAGE_USER_FILES_CODECS } from "./storage-user-files-v1";
@@ -231,6 +232,7 @@ const CODECS: ReadonlyMap<string, OptionalRouteCodec> = new Map([
   ...SERVER_AUDIT_CODECS,
   ...PROVIDER_DEFAULT_CODECS,
   ...DISCORD_ACCESS_CODECS,
+  [SLACK_SOCKET_CHANNELS_ROUTE, SLACK_SOCKET_CHANNELS_CODEC],
   ...HOST_RELEASE_CODECS,
   ...HOST_RESTART_CODECS,
   ...SERVER_SAFE_MODE_CODECS,

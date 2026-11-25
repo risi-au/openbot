@@ -1,3 +1,4 @@
+import { SLACK_SOCKET_CHANNEL_LIMIT } from "../ipc-messaging";
 import {
   adminRoute,
   boolean,
@@ -60,7 +61,7 @@ const messagingConnection = fields(
     credentials: string(64),
     orchestratorAgentId: nullable(identifier),
   },
-  { socketMode: boolean },
+  { socketMode: boolean, socketChannelIds: list(string(64), SLACK_SOCKET_CHANNEL_LIMIT) },
 );
 const messagingPage = fields({ url: nullable(string(4_096)), nonce: nullable(string(128)) });
 

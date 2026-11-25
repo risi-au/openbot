@@ -309,8 +309,11 @@ export class DiscordApiError extends Error {
   }
 }
 
+export type ReadMessagingCredentials = () => Record<string, string> | null;
+
 export interface MessagingDriverOptions {
   connectionId: string;
+  readCredentials?: ReadMessagingCredentials;
   rateLimited(retryAt: string): void;
 }
 
@@ -318,5 +321,9 @@ export interface MessagingDriver {
   readonly platform: MessagingPlatform;
   readonly requiredCredential: string;
   createAdapter(credentials: Record<string, string>, options: MessagingDriverOptions): MessagingAdapter;
-  createTransport(credentials: Record<string, string>, identity: ConnectionIdentity): MessagingTransport;
+  createTransport(
+    credentials: Record<string, string>,
+    identity: ConnectionIdentity,
+    readCredentials?: ReadMessagingCredentials,
+  ): MessagingTransport;
 }

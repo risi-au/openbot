@@ -1,12 +1,19 @@
 import { DISCORD_ORCHESTRATOR_AVATAR } from "@openbot/contracts/discord-app";
-import type { MessagingConnection, MessagingPlatform, MessagingRole } from "@openbot/contracts/ipc";
-import { MESSAGING_LIMITS } from "@openbot/contracts/ipc";
+import type {
+  MessagingConnection,
+  MessagingPlatform,
+  MessagingRole,
+  UpdateSlackSocketChannelInput,
+} from "@openbot/contracts/ipc";
+import { MESSAGING_LIMITS, SLACK_SOCKET_CHANNEL_LIMIT, slackChannelIdFromInput } from "@openbot/contracts/ipc";
 import { SLACK_ORCHESTRATOR_AVATAR } from "@openbot/contracts/slack-app";
 import type { AppMessages, AppTextKey } from "@openbot/i18n";
 import {
   Button,
   Checkbox,
   ExternalLink,
+  Field,
+  Input,
   Item,
   ItemActions,
   ItemContent,
@@ -76,6 +83,7 @@ export interface SlackIntegrationPanelProps extends IntegrationPageSlots {
   loadError?: string | null | undefined;
   onRetry?: (() => void) | undefined;
   access?: DiscordAccessControl | undefined;
+  onUpdateSlackSocketChannel?: (input: UpdateSlackSocketChannelInput, done?: () => void) => void;
 }
 
 export type WorkspacePlatform = Exclude<MessagingPlatform, "telegram" | "whatsapp">;
@@ -275,6 +283,12 @@ export function SlackIntegrationPanel(props: SlackIntegrationPanelProps) {
   const avatar = () => ORCHESTRATOR_AVATAR[props.platform ?? "slack"];
   const state = () => slackIntegrationState(props.connections, props.agents, props.platform, props.loadError);
   const access = () => (props.platform === "discord" ? props.access : undefined);
+  const socketWorkspaces = () =>
+    props.onUpdateSlackSocketChannel
+      ? props.connections
+          .filter((connection) => connection.socketChannelIds)
+          .map((connection) => connection.workspaceId)
+      : [];
   const needsAgent = () => props.connections.find((connection) => !slackOrchestrator(connection, props.agents)) ?? null;
   const atLimit = () => props.connections.length >= MESSAGING_LIMITS.connections;
   const openNew = () =>
@@ -389,6 +403,17 @@ export function SlackIntegrationPanel(props: SlackIntegrationPanelProps) {
             </ItemGroup>
           </SettingsSection>
 
+          <For each={socketWorkspaces()}>
+            {(workspaceId) => (
+              <SlackSocketChannels
+                workspaceId={workspaceId}
+                connection={props.connections.find((connection) => connection.workspaceId === workspaceId)}
+                busy={props.busy}
+                onUpdate={props.onUpdateSlackSocketChannel}
+              />
+            )}
+          </For>
+
           <ChannelOrchestratorSection
             text={text()}
             avatar={avatar()}
@@ -458,6 +483,75 @@ export function SlackIntegrationPanel(props: SlackIntegrationPanelProps) {
         onClose={() => setDisconnecting(null)}
       />
     </ChannelPage>
+  );
+}
+
+function SlackSocketChannels(props: {
+  workspaceId: string;
+  connection: MessagingConnection | undefined;
+  busy: boolean;
+  onUpdate: SlackIntegrationPanelProps["onUpdateSlackSocketChannel"];
+}) {
+  const { t } = useText();
+  const [input, setInput] = createSignal("");
+  const channelIds = () => props.connection?.socketChannelIds ?? [];
+  const id = () => slackChannelIdFromInput(input());
+  const canAdd = () =>
+    Boolean(id() && !channelIds().includes(id() ?? "")) && channelIds().length < SLACK_SOCKET_CHANNEL_LIMIT;
+  return (
+    <SettingsSection
+      title={t("connector.slack.socketChannelsTitle", { workspace: props.connection?.workspaceName ?? "" })}
+      description={t("connector.slack.socketChannelsDescription")}
+    >
+      <ItemGroup class="settings-modal-card">
+        <For each={channelIds()}>
+          {(channelId) => (
+            <Item>
+              <ItemContent>
+                <ItemTitle>{channelId}</ItemTitle>
+              </ItemContent>
+              <ItemActions>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  aria-label={t("connector.slack.removeSocketChannelLabel", { channelId })}
+                  disabled={props.busy || channelIds().length === 1}
+                  onClick={() => props.onUpdate?.({ workspaceId: props.workspaceId, channelId, action: "remove" })}
+                >
+                  {t("connector.slack.removeSocketChannel")}
+                </Button>
+              </ItemActions>
+            </Item>
+          )}
+        </For>
+        <Item>
+          <ItemContent>
+            <form
+              onSubmit={(event) => {
+                event.preventDefault();
+                const channelId = id();
+                if (channelId && canAdd() && !props.busy)
+                  props.onUpdate?.({ workspaceId: props.workspaceId, channelId, action: "add" }, () => setInput(""));
+              }}
+            >
+              <Field label={t("connector.slack.socketChannelInput")}>
+                <Input
+                  value={input()}
+                  maxlength={512}
+                  autocomplete="off"
+                  onValueChange={setInput}
+                  disabled={props.busy}
+                />
+              </Field>
+              <Button type="submit" size="sm" disabled={props.busy || !canAdd()}>
+                {t("connector.slack.addSocketChannel")}
+              </Button>
+            </form>
+          </ItemContent>
+        </Item>
+      </ItemGroup>
+    </SettingsSection>
   );
 }
 

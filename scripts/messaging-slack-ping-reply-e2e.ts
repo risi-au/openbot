@@ -368,6 +368,17 @@ try {
     await runCauseEffect(messaging.start(importOptions));
     await waitFor("connected Socket Mode status", () => (socketConnection()?.state === "connected" ? true : null));
     assert.equal(socketConnection()?.socketMode, true);
+    assert.deepEqual(socketConnection()?.socketChannelIds, ["CSOCKET"]);
+    await Promise.all(
+      ["CEXTRA", "CEXTRA2"].map((channelId) =>
+        runCauseEffect(messaging.updateSlackSocketChannel({ workspaceId: SOCKET_WORKSPACE, channelId, action: "add" })),
+      ),
+    );
+    assert.deepEqual(new Set(socketConnection()?.socketChannelIds), new Set(["CSOCKET", "CEXTRA", "CEXTRA2"]));
+    await runCauseEffect(
+      messaging.updateSlackSocketChannel({ workspaceId: SOCKET_WORKSPACE, channelId: "CEXTRA2", action: "remove" }),
+    );
+    assert.deepEqual(new Set(socketConnection()?.socketChannelIds), new Set(["CSOCKET", "CEXTRA"]));
     assert.equal(socketConnection()?.orchestratorAgentId, research.id);
     assert.equal(
       messaging.slackOverview().connections.find((item) => item.workspaceId === WORKSPACE)?.socketMode,
@@ -377,6 +388,7 @@ try {
     await runCauseEffect(messaging.stop());
     await runCauseEffect(messaging.start(importOptions));
     assert.equal(socketConnection()?.state, "paused");
+    assert.deepEqual(new Set(socketConnection()?.socketChannelIds), new Set(["CSOCKET", "CEXTRA"]));
     await runCauseEffect(messaging.reconnect("slack", SOCKET_WORKSPACE, false));
     await waitFor("reconnected Socket Mode status", () => (socketConnection()?.state === "connected" ? true : null));
     await runCauseEffect(messaging.disconnectSlackWorkspace(SOCKET_WORKSPACE));

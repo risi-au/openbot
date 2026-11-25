@@ -469,6 +469,7 @@ import type {
   StartWhatsAppLinkInput,
   TelegramChatInput,
   TelegramOverview,
+  UpdateSlackSocketChannelInput,
   WhatsAppGroupList,
   WhatsAppLinkState,
   WhatsAppOverview,
@@ -1173,6 +1174,9 @@ export const IPC_ENDPOINTS = {
     ),
     hostListDiscordRoles: scopedRequest<HostDiscordAccessInput, DiscordRoleList, "required">()(
       "messaging:host-list-discord-roles",
+    ),
+    hostUpdateSlackSocketChannel: scopedRequest<UpdateSlackSocketChannelInput, void, "required">()(
+      "messaging:update-slack-socket-channel",
     ),
     hostSetDiscordAccess: scopedRequest<HostSetDiscordAccessInput, DiscordAccess, "required">()(
       "messaging:host-set-discord-access",

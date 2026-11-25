@@ -1300,6 +1300,7 @@ const openbotApi: OpenBotDesktopApi = {
     hostGetDiscordAccess: decodeDiscordAccessReply,
     hostListDiscordRoles: decodeDiscordRolesReply,
     hostSetDiscordAccess: decodeDiscordAccessReply,
+    hostUpdateSlackSocketChannel: decodeVoid,
     hostGetWhatsAppOverview: decodeWhatsAppOverviewReply,
     hostStartWhatsAppLink: decodeWhatsAppLinkStateReply,
     hostGetWhatsAppLinkState: decodeWhatsAppLinkStateReply,

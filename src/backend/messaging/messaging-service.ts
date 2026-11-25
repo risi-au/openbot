@@ -27,7 +27,13 @@ import type {
   WhatsAppOverview,
   WhatsAppSender,
 } from "@openbot/contracts/ipc";
-import { MESSAGING_CONNECTION_STATES, MESSAGING_LIMITS } from "@openbot/contracts/ipc";
+import {
+  isSlackChannelId,
+  MESSAGING_CONNECTION_STATES,
+  MESSAGING_LIMITS,
+  SLACK_SOCKET_CHANNEL_LIMIT,
+  type UpdateSlackSocketChannelInput,
+} from "@openbot/contracts/ipc";
 import { isDynamicRecord, isOneOf, isString } from "@openbot/contracts/runtime-values";
 import type { DiscordEmbed } from "@openbot/contracts/signal-protocol/discord-api";
 import { TELEGRAM_LINK_CODE_TTL_SECONDS } from "@openbot/contracts/signal-protocol/telegram-route";
@@ -36,7 +42,7 @@ import { TELEGRAM_ORCHESTRATOR_AVATAR } from "@openbot/contracts/telegram-app";
 import { WHATSAPP_ORCHESTRATOR_AVATAR } from "@openbot/contracts/whatsapp-app";
 import { sourceText } from "@openbot/i18n/source";
 import { createOpenBotLogger, redactPostText, redactText } from "@openbot/logging";
-import { Deferred, Effect, Exit, Result, Schedule, Schema, Scope } from "effect";
+import { Deferred, Effect, Exit, Result, Schedule, Schema, Scope, Semaphore } from "effect";
 import type { AgentLifecycleFailed } from "../agent-service";
 import { causeHelpers } from "../effect-boundary";
 import type { MessagingOrigin } from "../mailbox-store";
@@ -188,6 +194,7 @@ export class MessagingService {
   readonly #threads: MessagingThreads;
   readonly #agents: MessagingAgents;
   readonly #credentials: MessagingCredentials;
+  readonly #slackChannelWrites = Semaphore.makeUnsafe(1);
   readonly #drivers: ReadonlyMap<MessagingPlatform, MessagingDriver>;
   readonly #downloadsRoot: string;
   readonly #live = new Map<string, LiveConnection>();
@@ -754,7 +761,38 @@ export class MessagingService {
     return true;
   }, Effect.uninterruptible).bind(this);
 
-  readonly disconnectSlackWorkspace = Effect.fn("MessagingService.disconnectSlackWorkspace")(function* (
+  readonly updateSlackSocketChannel = (input: UpdateSlackSocketChannelInput) =>
+    this.#slackChannelWrites.withPermit(this.#updateSlackSocketChannel(input));
+
+  readonly #updateSlackSocketChannel = Effect.fn("MessagingService.updateSlackSocketChannel")(function* (
+    this: MessagingService,
+    { workspaceId, channelId, action }: UpdateSlackSocketChannelInput,
+  ) {
+    const record = yield* messagingStep(() => this.#requireConnection("slack", workspaceId));
+    const values = this.#credentials.get(record.connectionId);
+    const socket = values && record.appId === SLACK_SOCKET_APP_ID ? slackSocketSettings(values) : null;
+    if (!values || !socket || !isSlackChannelId(channelId))
+      return yield* new MessagingOperationFailed({
+        cause: new Error("The Slack Socket Mode connection or channel is invalid."),
+      });
+    const exists = socket.channelIds.includes(channelId);
+    if ((action === "add") === exists) return;
+    const channels =
+      action === "add" ? [...socket.channelIds, channelId] : socket.channelIds.filter((id) => id !== channelId);
+    const first = channels[0];
+    if (!first || channels.length > SLACK_SOCKET_CHANNEL_LIMIT)
+      return yield* new MessagingOperationFailed({ cause: new Error("Keep between 1 and 64 Slack channels.") });
+    yield* this.#credentials.set(record.connectionId, {
+      ...values,
+      socketChannelId: first,
+      socketChannelIds: channels.join(","),
+    });
+  }, Effect.uninterruptible).bind(this);
+
+  readonly disconnectSlackWorkspace = (workspaceId: string) =>
+    this.#slackChannelWrites.withPermit(this.#disconnectSlackWorkspace(workspaceId));
+
+  readonly #disconnectSlackWorkspace = Effect.fn("MessagingService.disconnectSlackWorkspace")(function* (
     this: MessagingService,
     workspaceId: string,
   ) {
@@ -1174,6 +1212,7 @@ export class MessagingService {
       record,
       adapter: driver.createAdapter(credentials, {
         connectionId: record.connectionId,
+        readCredentials: () => this.#credentials.get(record.connectionId),
         rateLimited: (retryAt) => {
           live.retryAt = retryAt;
           this.#dispatch(this.#setState(live, "rate_limited"));
@@ -1227,7 +1266,7 @@ export class MessagingService {
       appId: record.appId === SLACK_SOCKET_APP_ID ? SLACK_SOCKET_APP_ID : identity.appId,
     });
     live.record = this.#threads.store.connection(record.connectionId) ?? record;
-    const transport = driver.createTransport(credentials, identity);
+    const transport = driver.createTransport(credentials, identity, () => this.#credentials.get(record.connectionId));
     live.transport = transport;
     transport.start({
       state: (state) => {
@@ -1318,6 +1357,7 @@ export class MessagingService {
     const live = this.#live.get(record.connectionId);
     const credentials = this.#credentials.status(record.connectionId);
     const values = credentials === "saved" ? this.#credentials.get(record.connectionId) : null;
+    const socket = values && record.appId === SLACK_SOCKET_APP_ID ? slackSocketSettings(values) : null;
     const stored = isOneOf(MESSAGING_CONNECTION_STATES, record.lastErrorCode) ? record.lastErrorCode : null;
     const required = this.#drivers.get(record.platform)?.requiredCredential;
     const state: MessagingConnectionState = !record.enabled
@@ -1334,6 +1374,7 @@ export class MessagingService {
       botUserId: record.botUserId,
       missingScopes: live?.identity?.missingScopes ?? [],
       ...(record.appId === SLACK_SOCKET_APP_ID ? { socketMode: true } : {}),
+      ...(socket ? { socketChannelIds: [...socket.channelIds] } : {}),
       retryAt: state === "rate_limited" ? (live?.retryAt ?? null) : null,
       credentials,
       orchestratorAgentId: record.orchestratorAgentId,

@@ -25,6 +25,7 @@ import {
   messagingConnectorSetEnabled,
   setDiscordAccess,
   type TeamAdminRequestError,
+  updateSlackSocketChannel,
 } from "@openbot/team-client/team-admin-requests";
 import type { TeamApiRequest } from "@openbot/team-client/team-api-requests";
 import { classifyFailure } from "@openbot/telemetry";
@@ -147,6 +148,8 @@ export function webHostMessaging(
         run(serverId, (target) => messagingConnectorAddOrchestrator(target, input)),
       hostGetDiscordAccess: (input, serverId) => access(serverId, (target) => discordAccess(target, input)),
       hostListDiscordRoles: (input, serverId) => access(serverId, (target) => discordRoles(target, input)),
+      hostUpdateSlackSocketChannel: (input, serverId) =>
+        run(serverId, (target) => updateSlackSocketChannel(target, input)),
       hostSetDiscordAccess: (input, serverId) => access(serverId, (target) => setDiscordAccess(target, input)),
     },
     dispose: () => {

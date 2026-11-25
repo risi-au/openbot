@@ -353,6 +353,7 @@ import {
   unpublishAgentTemplate,
   updateHostAgentBrowserProfile,
   updateHostBrowserProfile,
+  updateSlackSocketChannel,
   whatsappConnectorAddOrchestrator,
   whatsappConnectorAddSender,
   whatsappConnectorAnswerRequest,
@@ -613,6 +614,7 @@ type HostRequestActions = Pick<
   | "reconnectMessaging"
   | "disconnectMessaging"
   | "setMessagingEnabled"
+  | "updateSlackSocketChannel"
   | "addMessagingOrchestrator"
   | "loadWhatsAppConnector"
   | "startWhatsAppLink"
@@ -1059,6 +1061,8 @@ export function createHostRequestActions({
       runTeamRequest(messagingConnectorReconnect(connectorsAdmin(serverId), input)),
     disconnectMessaging: async (input, serverId) =>
       runTeamRequest(messagingConnectorDisconnect(connectorsAdmin(serverId), input)),
+    updateSlackSocketChannel: async (input, serverId) =>
+      runTeamRequest(updateSlackSocketChannel(connectorsAdmin(serverId), input)),
     setMessagingEnabled: async (input, serverId) =>
       runTeamRequest(messagingConnectorSetEnabled(connectorsAdmin(serverId), input)),
     addMessagingOrchestrator: async (input, serverId) =>

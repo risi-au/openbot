@@ -1,13 +1,18 @@
 import { CONNECTOR_MESSAGING_PLATFORMS, type MessagingConnectPage } from "@openbot/contracts/ipc";
 import { CONNECTORS_CAPABILITY, CONNECTORS_ROUTES } from "@openbot/contracts/team-protocol/connectors-v1";
+import {
+  SLACK_SOCKET_CHANNELS_CAPABILITY,
+  SLACK_SOCKET_CHANNELS_ROUTE,
+} from "@openbot/contracts/team-protocol/slack-socket-channels-v1";
 import { sourceText } from "@openbot/i18n/source";
 import { runCauseEffect } from "../../backend/effect-boundary";
+import { parseUpdateSlackSocketChannelInput } from "../ipc/messaging-inputs";
 import type { TeamApiConnectors } from "./dependencies";
 import { HttpError } from "./http-error";
 import type { RouteOutcome, TeamApiRequestContext } from "./request-context";
 import { readJson, requireAdmin, stringField } from "./request-helpers";
 
-const ROUTES: ReadonlySet<string> = new Set(Object.values(CONNECTORS_ROUTES));
+const ROUTES: ReadonlySet<string> = new Set([...Object.values(CONNECTORS_ROUTES), SLACK_SOCKET_CHANNELS_ROUTE]);
 
 const page = (opened: MessagingConnectPage | null) => ({ url: opened?.url ?? null, nonce: opened?.nonce ?? null });
 
@@ -26,6 +31,18 @@ export async function routeConnectors(
   const platform = CONNECTOR_MESSAGING_PLATFORMS.find((id) => id === body.platform) ?? "telegram";
   const workspaceId = () => stringField(body, "workspaceId", false, 128);
   switch (url.pathname) {
+    case SLACK_SOCKET_CHANNELS_ROUTE: {
+      if (!capabilities.has(SLACK_SOCKET_CHANNELS_CAPABILITY))
+        throw new HttpError(400, sourceText("error.team.connectorsUnsupported"));
+      let input: ReturnType<typeof parseUpdateSlackSocketChannelInput>;
+      try {
+        input = parseUpdateSlackSocketChannelInput(body);
+      } catch {
+        throw new HttpError(400, "A Slack channel request is invalid.");
+      }
+      await runCauseEffect(messaging.updateSlackSocketChannel(input));
+      return json(200, {});
+    }
     case CONNECTORS_ROUTES.githubStatus:
       return json(200, status(github.status()));
     case CONNECTORS_ROUTES.githubConnect:
@@ -40,7 +57,15 @@ export async function routeConnectors(
       return json(
         200,
         platform === "slack"
-          ? messaging.slackOverview()
+          ? {
+              connections: messaging
+                .slackOverview()
+                .connections.map(({ socketChannelIds, ...connection }) =>
+                  socketChannelIds && capabilities.has(SLACK_SOCKET_CHANNELS_CAPABILITY)
+                    ? { ...connection, socketChannelIds }
+                    : connection,
+                ),
+            }
           : platform === "discord"
             ? messaging.discordOverview()
             : messaging.telegramOverview(),

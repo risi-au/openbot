@@ -284,6 +284,7 @@ import { teamSideRouteCodec } from "@openbot/contracts/team-protocol/side-routes
 import { SIDEBAR_FOLDERS_CAPABILITY, sidebarFoldersEvent } from "@openbot/contracts/team-protocol/sidebar-folders-v1";
 import { SIDEBAR_PINS_CAPABILITY } from "@openbot/contracts/team-protocol/sidebar-pins-v1";
 import { withSkillSuggestionNames } from "@openbot/contracts/team-protocol/skill-learning-v1";
+import { SLACK_SOCKET_CHANNELS_CAPABILITY } from "@openbot/contracts/team-protocol/slack-socket-channels-v1";
 import { STORAGE_CHANNEL_CAPABILITY } from "@openbot/contracts/team-protocol/storage-channel-v1";
 import { STORAGE_DISK_CAPABILITY } from "@openbot/contracts/team-protocol/storage-disk-v1";
 import { STORAGE_USER_FILES_CAPABILITY } from "@openbot/contracts/team-protocol/storage-user-files-v1";
@@ -2763,7 +2764,8 @@ export class TeamApiServer {
             this.#options.providerAccounts !== undefined
           );
         if (capability === CONNECTORS_CAPABILITY) return this.#options.connectors !== undefined;
-        if (capability === DISCORD_ACCESS_CAPABILITY) return this.#options.connectors !== undefined;
+        if (capability === DISCORD_ACCESS_CAPABILITY || capability === SLACK_SOCKET_CHANNELS_CAPABILITY)
+          return this.#options.connectors !== undefined;
         if (capability === WHATSAPP_CONNECTOR_CAPABILITY) return this.#options.connectors !== undefined;
         if (capability === WHATSAPP_WORKING_MESSAGE_CAPABILITY) return this.#options.connectors !== undefined;
         if (capability === WHATSAPP_STATUS_REACTIONS_CAPABILITY) return this.#options.connectors !== undefined;

@@ -66,7 +66,9 @@ OPENBOT_AGENT_ID=agent-...
 
 Quit OpenBot and set `OPENBOT_SLACK_SOCKET_CONFIG` to the absolute path of that file for one launch against the existing personal profile. Leave the variable unset on later launches. Stop the standalone Slack bridge before opening the new connection so only one process receives events for that app. OpenBot saves the imported connection in its encrypted credential store and reconnects on subsequent launches. The import leaves an existing relay connection for the same workspace in place. Run the import again to connect after disconnecting or to replace credentials marked invalid.
 
-The Slack card shows connection status and lets you pause, reconnect, or disconnect. Mention the bot from the configured Slack account for a thread reply. To post from an OpenBot conversation, ask your agent to use the Slack messaging tool to send your text to the configured channel. Socket Mode supports text in the configured channel. Use OpenBot for agent approvals.
+The Slack card shows connection status and lets you pause, reconnect, or disconnect. Under **Channels**, paste a Slack channel link or ID and select **Add channel**. Invite the bot to each channel in Slack. The channel list applies as soon as you save a change and is saved with the workspace connection.
+
+Mention the bot from the configured Slack account for a thread reply. To post from an OpenBot conversation, ask your agent to use the Slack messaging tool to send your text to an approved channel. Include the channel ID when the bot's Slack permissions only expose IDs. Use OpenBot for agent approvals.
 
 ## Focused verification
 

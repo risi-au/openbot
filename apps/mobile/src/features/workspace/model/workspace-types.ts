@@ -175,6 +175,7 @@ import type {
   UpdateBrowserProfileInput,
   UpdateRestartMode,
   UpdateRoutineInput,
+  UpdateSlackSocketChannelInput,
   VaultHostImportResult,
   VaultSaveInput,
   VaultState,
@@ -526,6 +527,7 @@ export interface MobileWorkspaceContextValue {
   ) => Promise<boolean>;
   reconnectMessaging: (input: HostMessagingWorkspaceInput, serverId: string) => Promise<MessagingConnectorPage>;
   disconnectMessaging: (input: HostMessagingWorkspaceInput, serverId: string) => Promise<void>;
+  updateSlackSocketChannel: (input: UpdateSlackSocketChannelInput, serverId: string) => Promise<void>;
   setMessagingEnabled: (input: HostSetMessagingEnabledInput, serverId: string) => Promise<void>;
   addMessagingOrchestrator: (
     input: HostAddMessagingOrchestratorInput,

@@ -18,6 +18,7 @@ import type {
   SetWhatsAppStatusReactionsInput,
   SetWhatsAppWorkingMessageInput,
   StartWhatsAppLinkInput,
+  UpdateSlackSocketChannelInput,
   WhatsAppSenderInput,
 } from "@openbot/contracts/ipc";
 import {
@@ -25,6 +26,7 @@ import {
   isAgentModel,
   isAgentProvider,
   isReasoningEffort,
+  isSlackChannelId,
   isWhatsAppSender,
   parseDiscordAllowedRoles,
   parseWhatsAppPhoneNumber,
@@ -36,6 +38,14 @@ import { isObject, requireString } from "./validation";
 export function parseMessagingWorkspaceInput(value: unknown): MessagingWorkspaceInput {
   if (!isObject(value)) throw new Error("A messaging request is invalid.");
   return { workspaceId: requireString(value.workspaceId, "Workspace id") };
+}
+
+export function parseUpdateSlackSocketChannelInput(value: unknown): UpdateSlackSocketChannelInput {
+  if (!isObject(value) || !isSlackChannelId(value.channelId) || (value.action !== "add" && value.action !== "remove"))
+    throw new Error("A Slack channel request is invalid.");
+  const { workspaceId } = parseMessagingWorkspaceInput(value);
+  if (workspaceId.length > 128) throw new Error("A Slack workspace id is invalid.");
+  return { workspaceId, channelId: value.channelId, action: value.action };
 }
 
 export function parseSetMessagingEnabledInput(value: unknown): SetMessagingEnabledInput {

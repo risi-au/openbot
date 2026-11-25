@@ -18,6 +18,7 @@ import type {
   MessagingIngress,
   MessagingPlace,
   MessagingPlaces,
+  ReadMessagingCredentials,
   RecentMessages,
   StatusReaction,
 } from "../messaging-types";
@@ -71,6 +72,7 @@ class SlackAdapter implements MessagingAdapter {
   readonly #names = new Map<string, Deferred.Deferred<string>>();
   readonly #places = new Map<string, Deferred.Deferred<string>>();
   #botUserId = "";
+  readonly #channels: () => readonly string[];
 
   constructor(
     botToken: string,
@@ -78,11 +80,12 @@ class SlackAdapter implements MessagingAdapter {
     private readonly socket: SlackSocketSettings | null,
     private readonly invalidSocket: boolean,
   ) {
+    this.#channels = socket ? socketChannels(socket, options.readCredentials) : () => [];
     this.#api = new SlackWebApi({
       token: botToken,
       origin: options.origin,
       rateLimited: options.rateLimited,
-      channelId: socket?.channelId,
+      channels: socket ? this.#channels : undefined,
     });
   }
 
@@ -431,8 +434,13 @@ class SlackAdapter implements MessagingAdapter {
     this: SlackAdapter,
   ): Effect.fn.Return<MessagingPlaces, MessagingAdapterError> {
     if (this.socket) {
-      const id = this.socket.channelId;
-      return { places: [{ id, name: yield* this.placeName(id), kind: "channel" }] };
+      return {
+        places: yield* Effect.forEach(
+          this.#channels(),
+          (id) => this.placeName(id).pipe(Effect.map((name) => ({ id, name, kind: "channel" as const }))),
+          { concurrency: 4 },
+        ),
+      };
     }
     const places: MessagingPlace[] = [];
     let cursor: string | undefined;
@@ -536,6 +544,12 @@ function responseMessages(response: DynamicRecord): DynamicRecord[] {
   return Array.isArray(response.messages) ? response.messages.filter(isDynamicRecord) : [];
 }
 
+function socketChannels(settings: SlackSocketSettings, readCredentials: ReadMessagingCredentials | undefined) {
+  return readCredentials
+    ? () => slackSocketSettings(readCredentials() ?? {})?.channelIds ?? []
+    : () => settings.channelIds;
+}
+
 export function slackDriver(options: SlackDriverOptions = {}): MessagingDriver {
   return {
     platform: "slack",
@@ -549,9 +563,16 @@ export function slackDriver(options: SlackDriverOptions = {}): MessagingDriver {
         credentials.socketAppToken !== undefined && !socket,
       );
     },
-    createTransport(credentials, identity) {
+    createTransport(credentials, identity, readCredentials) {
       const socket = slackSocketSettings(credentials);
-      if (socket) return new SlackSocketTransport(identity, socket, options.origin);
+      if (socket)
+        return new SlackSocketTransport(
+          identity,
+          socket,
+          options.origin,
+          undefined,
+          socketChannels(socket, readCredentials),
+        );
       if (!options.ingress) throw new Error(sourceText("error.messaging.unsupported"));
       return new SlackEventsTransport({ identity, ingress: options.ingress });
     },

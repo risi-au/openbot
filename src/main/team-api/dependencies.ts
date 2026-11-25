@@ -232,6 +232,7 @@ export interface TeamApiConnectors {
     | "discordOverview"
     | "telegramOverview"
     | "connectSlackWorkspace"
+    | "updateSlackSocketChannel"
     | "connectDiscordGuild"
     | "connectTelegramChat"
     | "completeSlackWorkspace"

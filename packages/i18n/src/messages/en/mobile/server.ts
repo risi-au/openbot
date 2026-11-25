@@ -1067,6 +1067,11 @@ export const messages = defineMessages("mobile.server", {
     one: "You can connect a maximum of {count} workspace.",
     other: "You can connect a maximum of {count} workspaces.",
   },
+  "mobile.server.connectors.slack.socketChannelInput": "Slack channel link or ID",
+  "mobile.server.connectors.slack.addSocketChannel": "Add channel",
+  "mobile.server.connectors.slack.socketChannelsDescription": "Invite the Slack bot to the channel first.",
+  "mobile.server.connectors.slack.removeSocketChannel": "Remove",
+  "mobile.server.connectors.slack.removeSocketChannelLabel": "Remove Slack channel {channelId}",
   "mobile.server.connectors.slack.workspaceTitle": "Workspace",
   "mobile.server.connectors.slack.workspaceDescription": "People mention @OpenBot or send it a direct message.",
   "mobile.server.connectors.slack.missingScopes":

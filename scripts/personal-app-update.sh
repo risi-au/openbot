@@ -119,15 +119,14 @@ fi
 previous_phase="$(python3 -c '
 import json, os
 try:
-    with open(os.environ[\"OPENBOT_PERSONAL_STATUS_FILE\"], encoding=\"utf-8\") as handle:
-        print(json.load(handle)[\"phase\"])
+    with open(os.environ["OPENBOT_PERSONAL_STATUS_FILE"], encoding="utf-8") as handle:
+        print(json.load(handle)["phase"])
 except Exception:
-    print(\"idle\")
+    print("idle")
 ' 2>/dev/null || echo idle)"
 echo "-- fetching upstream --"
-# Only the release tags follow: a plain --tags run clobbers on forks that keep a local tag where an
-# upstream branch shares its name.
-if ! git -C "$REPO" fetch upstream --no-tags --prune '+refs/tags/v*:refs/tags/v*'; then
+# Refresh upstream main and release tags. Explicit refspecs avoid unrelated tags.
+if ! git -C "$REPO" fetch upstream --no-tags --prune '+refs/heads/main:refs/remotes/upstream/main' '+refs/tags/v*:refs/tags/v*'; then
   mark_finished; write_status error "OpenBot could not fetch the nightly-labs repo." "-" "-" "-" "-" "$STARTED"
   echo "ERROR: fetch failed" >&2; exit 1
 fi
@@ -144,11 +143,20 @@ pick() {
   return 1
 }
 
+installed_matches() {
+  local installed_revision
+  installed_revision="$(cat "$UPDATES_BASE/current/.personal-build-revision" 2>/dev/null || true)"
+  [ -n "$installed_revision" ] && [ "$installed_revision" = "$(git -C "$REPO" rev-parse HEAD)" ]
+}
+
 if [ "$COMMAND" = "check" ]; then
   if tag="$(pick)"; then
     version="$(git -C "$REPO" show "$tag:package.json" | sed -n 's/^[[:space:]]*"version":[[:space:]]*"\([^"]*\)".*/\1/p' | head -1)"
     mark_finished
     write_status available "Release $tag waits to merge and build." "$tag" "$version" "-" "-" "$STARTED"
+  elif ! installed_matches; then
+    mark_finished
+    write_status available "The installed build needs to be rebuilt from the fork." "-" "-" "-" "-" "$STARTED"
   else
     latest="$(git -C "$REPO" for-each-ref --sort=-creatordate --format='%(refname:short)' 'refs/tags/v*' | head -1)"
     mark_finished
@@ -171,7 +179,7 @@ if [ "$REBUILD" != "yes" ]; then
       :
     else
       tag=""
-      if [ "$previous_phase" != "error" ]; then
+      if [ "$previous_phase" != "error" ] && installed_matches; then
         # Nothing waits to merge. A run that failed after its merge retries as a build; any other
         # end phase means the fork is current.
         latest="$(git -C "$REPO" for-each-ref --sort=-creatordate --format='%(refname:short)' 'refs/tags/v*' | head -1)"
@@ -252,6 +260,7 @@ if ! rsync -a --delete "$REPO/dist/linux-unpacked/" "$direction/"; then
   mark_finished; write_status error "The install rsync failed." "$tag" "$version" "-" "-" "$STARTED"
   exit 1
 fi
+git -C "$REPO" rev-parse HEAD > "$direction/.personal-build-revision"
 ln -sfn "$(basename "$direction")" "$UPDATES_BASE/current"
 mark_finished
 write_status ready "Version $version is installed. Restart OpenBot to use it." "$tag" "$version" "$direction" "-" "$STARTED"

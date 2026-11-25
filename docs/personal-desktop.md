@@ -8,7 +8,7 @@ The installed desktop entry is **OpenBot Personal**. Its default data directory 
 
 The main process sets a private home and provider configuration paths before it starts provider processes. The packaged app also starts child processes from this home. Codex processes use this directory even when the parent starts in another repository.
 
-The fork keeps its downloaded provider runtimes inside its own profile. It does not import personal plugin caches, skills, global instructions, or memory files. Its pinned Codex system skills start disabled. Automatic workspace skill installation and agent memory tools are disabled. Existing memory records remain stored for recovery, but the fork does not inject them into model context.
+The fork keeps its downloaded provider runtimes inside its own profile. It does not import personal plugin caches, skills, global instructions, or memory files. Codex system skills and automatic workspace skill installation follow the normal defaults. Agent memory tools and saved-memory context are available within the personal profile.
 
 This is configuration isolation. Agents with full filesystem access can still read files outside the private home when instructed. Project instructions in a repository that you choose to work on can also apply. This change does not add an operating-system sandbox.
 
@@ -46,7 +46,7 @@ bunx electron-builder --dir --linux --x64 --publish never
 
 The desktop executable is `dist/linux-unpacked/openbot-personal`. Keep the whole directory together when installing it. This build does not include the optional remote virtual desktop runtime.
 
-Application updates are disabled in personal mode. Pull upstream changes deliberately, build a separate version, and verify that version before replacing the installed directory. Keep the previous executable and a consistent database snapshot before an upgrade. An old binary alone is not a rollback after a schema migration.
+The Personal build card checks upstream releases and builds the fork. If a merge has conflicts, resolve them before retrying. Verify a new build before replacing the installed directory. Keep the previous executable and a consistent database snapshot before an upgrade. An old binary alone is not a rollback after a schema migration.
 
 The fork keeps the upstream PolyForm Noncommercial license. Fork ownership does not change its use restrictions.
 

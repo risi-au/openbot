@@ -309,8 +309,9 @@ const personalCodexDirectory = join(app.getPath("userData"), "home/.codex");
 mkdirSync(personalCodexDirectory, { recursive: true, mode: 0o700 });
 const personalConfigPath = join(personalCodexDirectory, "config.toml");
 const personalConfig = existsSync(personalConfigPath) ? readFileSync(personalConfigPath, "utf8") : "";
-if (!personalConfig.includes("# OpenBot Personal defaults")) {
-  writeFileSync(personalConfigPath, personalConfig + personalCodexConfig(app.getPath("userData")), { mode: 0o600 });
+const legacyPersonalConfig = personalCodexConfig(app.getPath("userData"));
+if (personalConfig.includes(legacyPersonalConfig)) {
+  writeFileSync(personalConfigPath, personalConfig.replace(legacyPersonalConfig, ""), { mode: 0o600 });
 }
 app.setName("OpenBot Personal");
 app.enableSandbox();

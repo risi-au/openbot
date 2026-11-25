@@ -46,7 +46,6 @@ export class ManagedSkillService {
   ) {}
 
   syncAll(agents: AgentSummary[]): Effect.Effect<void> {
-    if (process.env.OPENBOT_PERSONAL_MODE === "1") return Effect.void;
     return Effect.gen({ self: this }, function* () {
       const content = yield* Effect.result(this.content());
       if (Result.isFailure(content)) {
@@ -66,7 +65,6 @@ export class ManagedSkillService {
   }
 
   syncAgent(agent: AgentSummary): Effect.Effect<void> {
-    if (process.env.OPENBOT_PERSONAL_MODE === "1") return Effect.void;
     return Effect.gen({ self: this }, function* () {
       const result = yield* Effect.result(
         this.content().pipe(Effect.flatMap((content) => syncTargets(agent.workspacePath, content, this.slug))),

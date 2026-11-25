@@ -8,7 +8,6 @@ import {
   type McpServerConfig,
 } from "@openbot/contracts/ipc";
 import { developerInstructions, memoryContext } from "../src/backend/agent/developer-instructions";
-import { DISABLED_MEMORY_TOOLS } from "../src/backend/agent/memory-tool-inputs";
 import { BUILTIN_TOOL_CATALOG, visibleToolDefinitions } from "../src/backend/agent/tool-catalog";
 import { toolGuidance } from "../src/backend/agent/tool-guidance";
 import { AgentStore } from "../src/backend/agent-store";
@@ -54,17 +53,24 @@ for (let restart = 0; restart < 2; restart++) {
 }
 assert.equal(requests, 0);
 assert.equal(await readFile(storagePath, "utf8"), "preserve-existing-encrypted-session");
-assert.deepEqual(memoryContext([], { storedMemoryCount: 99 }), { memories: [], storedCount: 0, limit: 0 });
+assert.equal(memoryContext([], { storedMemoryCount: 99 }).storedCount, 99);
 for (const provider of AGENT_PROVIDERS) {
-  assert.ok(visibleToolDefinitions(provider).every((tool) => !DISABLED_MEMORY_TOOLS.has(tool.name)));
+  assert.ok(visibleToolDefinitions(provider).length > 0);
 }
-assert.ok(BUILTIN_TOOL_CATALOG.every((tool) => !DISABLED_MEMORY_TOOLS.has(tool.tool)));
-await runCauseEffect(new ManagedSkillService(join(root, "missing-skill")).syncAll([]));
+assert.ok(BUILTIN_TOOL_CATALOG.some((tool) => tool.tool === "remember"));
 const store = new AgentStore(join(root, "data"), join(root, "home"));
 try {
   await runCauseEffect(store.initialize());
   const agent = await runCauseEffect(
     store.createAgent({ name: "Browser access check", description: "", avatarSeed: "browser-check", avatarHue: null }),
+  );
+  const skillSource = join(root, "skill.md");
+  await writeFile(skillSource, "---\nname: openbot-site-hosting\n---\nTest skill\n");
+  await runCauseEffect(new ManagedSkillService(skillSource).syncAgent(agent));
+  assert.ok(
+    (await readFile(join(agent.workspacePath, ".agents/skills/openbot-site-hosting/SKILL.md"), "utf8")).includes(
+      "Test skill",
+    ),
   );
   const instructions = developerInstructions(agent, store.sharedRoot, [], root, DEFAULT_AGENT_DEFAULTS);
   assert.ok(instructions.includes("do not redirect that request to the embedded browser"));
@@ -115,7 +121,7 @@ try {
 }
 await writeFile(
   join(out, "report.json"),
-  `${JSON.stringify({ passed: true, restartChecks: 2, accountRequests: requests, memories: "disabled", automaticSkills: "disabled" }, null, 2)}\n`,
+  `${JSON.stringify({ passed: true, restartChecks: 2, accountRequests: requests, memories: "enabled", automaticSkills: "enabled" }, null, 2)}\n`,
 );
 // Machine-readable: artifact location only.
 process.stdout.write(`PASS ${join(out, "report.json")}\n`);

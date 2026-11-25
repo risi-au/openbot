@@ -65,9 +65,8 @@ export class PersonalUpdateService extends EventEmitter<PersonalUpdateServiceEve
   }
 
   async updateNow(): Promise<PersonalUpdateStatus> {
-    // A conflict that the user fixed, and a ready build that lost its install, skip the merge and
-    // go straight to the build and the swap.
-    const rebuild = this.#last.phase === "conflict" || this.#last.phase === "ready";
+    // A ready build that lost its install can be rebuilt without a merge.
+    const rebuild = this.#last.phase === "ready";
     this.#startRun(rebuild ? ["update", "--rebuild"] : ["update"]);
     return this.getStatus();
   }

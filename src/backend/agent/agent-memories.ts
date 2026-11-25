@@ -24,12 +24,7 @@ import { normalizeMemoryText } from "../memory-store";
 import { type DynamicToolCallParams, isRecord } from "../protocol";
 import type { ConversationRuntime } from "./conversation-runtime";
 import type { MemoryReviewOperation } from "./memory-review-prompt";
-import {
-  DISABLED_MEMORY_TOOLS,
-  listMemoriesInput,
-  searchMemoriesInput,
-  setMemoryInclusionInput,
-} from "./memory-tool-inputs";
+import { listMemoriesInput, searchMemoriesInput, setMemoryInclusionInput } from "./memory-tool-inputs";
 import { type OpenBotToolResponse, openBotToolFailure, openBotToolResult } from "./routine-tools";
 
 type PendingMemoryMutation =
@@ -265,8 +260,6 @@ export class AgentMemories {
     senderAgentId: string,
     redact: (value: string) => string = redactSecrets,
   ): OpenBotToolResponse | null {
-    if (process.env.OPENBOT_PERSONAL_MODE === "1" && DISABLED_MEMORY_TOOLS.has(params.tool))
-      return openBotToolFailure(sourceText("error.backend.memoryOperationFailed"));
     try {
       return this.#handleTool(params, senderAgentId, redact);
     } catch (error) {

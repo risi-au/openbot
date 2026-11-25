@@ -230,6 +230,12 @@ if ! (cd "$REPO" && bun run typecheck:node); then
   exit 1
 fi
 
+echo "-- preparing computer use --"
+if ! (cd "$REPO" && bun scripts/install-cua-driver.ts linux x64); then
+  mark_finished; write_status error "The computer-use runtime did not install." "$tag" "$version" "-" "-" "$STARTED"
+  exit 1
+fi
+
 echo "-- building --"
 write_status building "Building the app." "$tag" "$version" "-" "-" "$STARTED"
 if ! (cd "$REPO" && bun run build); then

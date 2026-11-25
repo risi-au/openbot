@@ -1,10 +1,10 @@
 {
-  "version": "1.4.7",
+  "version": "1.4.13",
   "highlights": [
-    "Delete a message, mark it as unread, or send its text to a channel: touch and hold the message.",
-    "Link WhatsApp numbers and change Telegram and Slack triggers and outputs from your phone. The server needs the latest OpenBot.",
-    "Use the app in Arabic, with a right-to-left layout. Each chat paragraph shows in the direction of its text.",
-    "Connect Coinbase, Robinhood, RevenueCat, TickTick, Proton Pass and Higgsfield from the Apps marketplace.",
-    "The app reconnects faster when you come back to it, uses less memory while a reply streams, and closes less often."
+    "Choose how agents access your location: once, always, or never.",
+    "Background refresh keeps agents and chats up to date when you open the app.",
+    "Workflows now support image, video, and asset steps, with pause and resume controls.",
+    "Transfer ownership of your server to another OpenBot account.",
+    "Introducing Neon Coast, a sunset backdrop featuring a police chase and fireworks."
   ]
 }

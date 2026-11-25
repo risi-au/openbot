@@ -4,6 +4,7 @@ import { join, resolve } from "node:path";
 import { AGENT_PROVIDERS, type McpServerConfig } from "@openbot/contracts/ipc";
 import { Effect } from "effect";
 import type { AgentBrowserHost } from "../src/backend/agent/turn-lifecycle";
+import { OpenBotDatabase } from "../src/backend/openbot-database";
 import { personalEnvironment } from "../src/main/personal-environment";
 
 const profile = resolve(process.argv[2] ?? "");
@@ -24,10 +25,11 @@ const { runCauseEffect } = await import("../src/backend/effect-boundary");
 const checks = join(profile, "home/.checks");
 await mkdir(checks, { recursive: true, mode: 0o700 });
 const root = await mkdtemp(join(checks, "hypruse-"));
-const store = new AgentStore(join(root, "data"), join(root, "home"));
+const store = new AgentStore(join(root, "data"), join(root, "home"), new OpenBotDatabase(join(root, "data")));
 const unused = () => Effect.die(new Error("Embedded browser actions are outside this check."));
 const browser: AgentBrowserHost = {
   listTabs: () => [],
+  toolCanUseTab: () => false,
   beginTakeover: unused,
   endTakeover: () => {},
   shareTab: () => {},
@@ -51,7 +53,7 @@ const service = new AgentService({
   browser,
   preferredProvider: "codex",
   offProviders: AGENT_PROVIDERS.filter((provider) => provider !== "codex"),
-  approvalAutomation: { autoApproves: () => true },
+  approvalAutomation: { set: unused, autoApproves: () => true },
 });
 const config: McpServerConfig = {
   id: "",

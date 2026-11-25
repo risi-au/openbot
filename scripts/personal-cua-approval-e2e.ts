@@ -8,6 +8,7 @@ import { ConversationRuntime } from "../src/backend/agent/conversation-runtime";
 import { AgentStore } from "../src/backend/agent-store";
 import { CodexAppServerClient } from "../src/backend/app-server-client";
 import { runCauseEffect } from "../src/backend/effect-boundary";
+import { OpenBotDatabase } from "../src/backend/openbot-database";
 import type { RequestId } from "../src/backend/protocol";
 
 class ConsentClient extends CodexAppServerClient {
@@ -20,7 +21,7 @@ class ConsentClient extends CodexAppServerClient {
 const out = resolve(import.meta.dirname, "../.openbot-build/personal-cua-approval-e2e");
 await mkdir(out, { recursive: true });
 const root = await mkdtemp(join(out, "run-"));
-const store = new AgentStore(join(root, "data"), join(root, "home"));
+const store = new AgentStore(join(root, "data"), join(root, "home"), new OpenBotDatabase(join(root, "data")));
 const events: AgentEvent[] = [];
 const conversation = new ConversationRuntime(
   store,
@@ -33,10 +34,10 @@ let sandboxed = false;
 const unused = () => Effect.die(new Error("Desktop consent must not invoke browser or hosted-site operations."));
 const attention = new AttentionRegistry({
   conversation,
-  browser: { listTabs: () => [], beginTakeover: unused, endTakeover: () => {} },
+  browser: { listTabs: () => [], toolCanUseTab: () => false, beginTakeover: unused, endTakeover: () => {} },
   hostedSites: { prepareApproval: unused, resolveApproval: unused },
-  routines: { markNeedsAttention: () => {}, markRunningForTurn: () => {} },
-  approvalAutomation: { autoApproves: () => autoApprove },
+  routines: { runsTurn: () => false, markNeedsAttention: () => {}, markRunningForTurn: () => {} },
+  approvalAutomation: { set: unused, autoApproves: () => autoApprove },
   workspaceSandboxed: () => sandboxed,
   emit: (event) => events.push(event),
   emitError: (_code, error) => {

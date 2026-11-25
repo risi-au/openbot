@@ -13,6 +13,7 @@ import { toolGuidance } from "../src/backend/agent/tool-guidance";
 import { AgentStore } from "../src/backend/agent-store";
 import { runCauseEffect } from "../src/backend/effect-boundary";
 import { agentMcpServers } from "../src/backend/mcp-provider-shapes";
+import { OpenBotDatabase } from "../src/backend/openbot-database";
 import { CentralAuthManager } from "../src/main/central-auth-manager";
 import { ManagedSkillService } from "../src/main/managed-skill-service";
 import { personalCodexConfig, personalEnvironment } from "../src/main/personal-environment";
@@ -58,7 +59,7 @@ for (const provider of AGENT_PROVIDERS) {
   assert.ok(visibleToolDefinitions(provider).length > 0);
 }
 assert.ok(BUILTIN_TOOL_CATALOG.some((tool) => tool.tool === "remember"));
-const store = new AgentStore(join(root, "data"), join(root, "home"));
+const store = new AgentStore(join(root, "data"), join(root, "home"), new OpenBotDatabase(join(root, "data")));
 try {
   await runCauseEffect(store.initialize());
   const agent = await runCauseEffect(
@@ -74,7 +75,7 @@ try {
   );
   const instructions = developerInstructions(agent, store.sharedRoot, [], root, DEFAULT_AGENT_DEFAULTS);
   assert.ok(instructions.includes("do not redirect that request to the embedded browser"));
-  assert.ok(instructions.includes("the user's Chrome, Chromium, and other Linux/Omarchy applications"));
+  assert.ok(instructions.includes("the requested existing window and signed-in session"));
   assert.ok(!instructions.includes("Use only openbot_browser"));
   assert.ok(instructions.includes("CUA's separate agent seat and cursor"));
   assert.ok(instructions.includes("Do not use foreground delivery"));

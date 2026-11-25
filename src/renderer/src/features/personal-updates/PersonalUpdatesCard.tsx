@@ -69,7 +69,7 @@ export function PersonalUpdatesCard() {
             loadingLabel={t("settings.personalUpdates.busy")}
             onClick={() => void action().run()}
           >
-            {personal.status().phase === "current" ? t("settings.personalUpdates.upToDate") : action().label}
+            {action().label}
           </Button>
         </ItemActions>
       </Item>

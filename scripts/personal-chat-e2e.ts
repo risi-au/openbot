@@ -4,6 +4,7 @@ import { join, resolve } from "node:path";
 import { AGENT_PROVIDERS } from "@openbot/contracts/ipc";
 import { Effect } from "effect";
 import type { AgentBrowserHost } from "../src/backend/agent/turn-lifecycle";
+import { OpenBotDatabase } from "../src/backend/openbot-database";
 import { personalEnvironment } from "../src/main/personal-environment";
 
 const profile = process.argv[2];
@@ -23,10 +24,11 @@ await mkdir(out, { recursive: true });
 const checks = join(profile, "home/.checks");
 await mkdir(checks, { recursive: true, mode: 0o700 });
 const root = await mkdtemp(join(checks, "chat-"));
-const store = new AgentStore(join(root, "data"), join(root, "home"));
+const store = new AgentStore(join(root, "data"), join(root, "home"), new OpenBotDatabase(join(root, "data")));
 const unused = () => Effect.die(new Error("Browser actions are outside this chat check."));
 const browser: AgentBrowserHost = {
   listTabs: () => [],
+  toolCanUseTab: () => false,
   beginTakeover: unused,
   endTakeover: () => {},
   shareTab: () => {},

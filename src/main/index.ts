@@ -323,8 +323,11 @@ if (commandLineUserDataDirectory) {
     ),
   );
 } else {
-  app.setPath("userData", join(app.getPath("appData"), "OpenBot Personal"));
+  // A relaunch inherits the provider's private home, so appData can point inside the profile.
+  const inheritedProfile = process.env.OPENBOT_PERSONAL_PROFILE;
+  app.setPath("userData", inheritedProfile || join(app.getPath("appData"), "OpenBot Personal"));
 }
+process.env.OPENBOT_PERSONAL_PROFILE = app.getPath("userData");
 const providerEnvironment = personalEnvironment(app.getPath("userData"));
 for (const [key, value] of Object.entries(providerEnvironment)) {
   if (value === undefined) delete process.env[key];

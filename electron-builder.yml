@@ -44,6 +44,8 @@ extraResources:
     to: plugin-catalog
   - from: resources/agent-import
     to: agent-import
+  - from: scripts/slack-socket-bridge
+    to: slack-socket-bridge
   - from: resources/cli
     to: cli
   - from: resources/agent-runtime

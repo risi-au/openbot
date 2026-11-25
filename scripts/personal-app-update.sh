@@ -268,6 +268,12 @@ if ! rsync -a --delete "$REPO/dist/linux-unpacked/" "$direction/"; then
 fi
 git -C "$REPO" rev-parse HEAD > "$direction/.personal-build-revision"
 ln -sfn "$(basename "$direction")" "$UPDATES_BASE/current"
+if [ "$UPDATES_BASE" = "$HOME/.local/opt/openbot-personal" ] &&
+  command -v systemctl >/dev/null &&
+  systemctl --user is-enabled --quiet openbot-slack-bridge.service 2>/dev/null; then
+  systemctl --user try-restart openbot-slack-bridge.service ||
+    echo "OpenBot is installed. The Slack bridge could not restart; check its user service."
+fi
 mark_finished
 write_status ready "Version $version is installed. Restart OpenBot to use it." "$tag" "$version" "$direction" "-" "$STARTED"
 

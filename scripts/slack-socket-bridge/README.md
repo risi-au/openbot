@@ -31,6 +31,18 @@ The bridge waits for explicit Slack mentions on one channel from one user. It se
 
 6. Wait for `Slack Socket Mode connected.` Mention the bot in the test channel from the allowed account and check for a thread reply. The bridge replies only when the OpenBot turn completes with text. If the agent needs approval, answer in OpenBot. If a turn times out or the bridge exits mid-turn, send a new mention only after checking the original delivery.
 
+## Start at login
+
+The Linux personal build includes the bridge. After filling in the private environment file, run:
+
+```sh
+"$HOME/.local/opt/openbot-personal/current/resources/slack-socket-bridge/service.sh" enable
+```
+
+This starts the bridge and enables OpenBot desktop autostart at the next graphical login. The bridge waits for OpenBot if login starts it later. It follows the installed `current` build and the updater restarts it when a new build is installed. Finish active Slack turns before updating.
+
+Use `status` to check the bridge, or `disable` to stop it and remove both login startup links. Use `enable-bridge-only` if another service starts your OpenBot host.
+
 ## Move it to another host
 
 Stop the PC bridge before starting the VPS bridge with the same Slack app. Move OpenBot using its data migration process and verify the agent ID and **Local scripts** access on the VPS. Copy these bridge files and transfer the tokens securely, then update the paths for the VPS user. Keep both processes running there, for example with services that start after boot. Slack uses an outbound WebSocket connection, so the bridge needs no public inbound port. The bridge keeps its pending messages and recent Slack event IDs only in memory. Complete pending turns before moving it.

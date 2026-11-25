@@ -1,0 +1,11 @@
+[Unit]
+Description=OpenBot Personal desktop autostart for the Slack bridge
+PartOf=graphical-session.target
+ConditionFileIsExecutable=%h/.local/opt/openbot-personal/current/openbot-personal
+
+[Service]
+ExecStart="%h/.local/opt/openbot-personal/current/openbot-personal" --force-renderer-accessibility --password-store=gnome-libsecret
+ExitType=cgroup
+
+[Install]
+WantedBy=graphical-session.target

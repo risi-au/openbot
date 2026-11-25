@@ -1,0 +1,13 @@
+[Unit]
+Description=OpenBot Personal Slack Socket Mode bridge
+ConditionPathExists=%h/.local/state/openbot-slack-bridge.env
+StartLimitIntervalSec=0
+
+[Service]
+ExecStart=/usr/bin/env node "--env-file=%h/.local/state/openbot-slack-bridge.env" "%h/.local/opt/openbot-personal/current/resources/slack-socket-bridge/bridge.mjs"
+Restart=on-failure
+RestartSec=15s
+UMask=0077
+
+[Install]
+WantedBy=default.target

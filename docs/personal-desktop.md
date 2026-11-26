@@ -54,7 +54,7 @@ The fork keeps the upstream PolyForm Noncommercial license. Fork ownership does 
 
 The fork can use a Slack app’s Socket Mode connection in **Marketplace → Apps → Slack**. It uses the native agent assignment, Slack threads, connection status, and posting tools. The computer running OpenBot opens the connection to Slack directly.
 
-Use an app-level `xapp-` token with `connections:write` and a bot `xoxb-` token with `app_mentions:read` and `chat:write`. Enable the `app_mention` event in the Slack app and add the bot to the designated channel. Create a file readable only by your user (mode `0600`) with these fields. The standalone bridge’s existing configuration file already has these fields.
+Use an app-level `xapp-` token with `connections:write` and a bot `xoxb-` token with `app_mentions:read` and `chat:write`. Add `files:write` to send files. Enable the `app_mention` event in the Slack app and add the bot to the designated channel. Create a file readable only by your user (mode `0600`) with these fields. The standalone bridge’s existing configuration file already has these fields.
 
 ```ini
 SLACK_APP_TOKEN=xapp-...
@@ -68,7 +68,7 @@ Quit OpenBot and set `OPENBOT_SLACK_SOCKET_CONFIG` to the absolute path of that 
 
 The Slack card shows connection status and lets you pause, reconnect, or disconnect. Under **Channels**, paste a Slack channel link or ID and select **Add channel**. Invite the bot to each channel in Slack. The channel list applies as soon as you save a change and is saved with the workspace connection.
 
-Mention the bot from the configured Slack account for a thread reply. To post from an OpenBot conversation, ask your agent to use the Slack messaging tool to send your text to an approved channel. Include the channel ID when the bot's Slack permissions only expose IDs. Use OpenBot for agent approvals.
+Mention the bot from the configured Slack account for a thread reply. To post from an OpenBot conversation, ask your agent to use the Slack messaging tool to send your text to an approved channel. Include the channel ID when the bot's Slack permissions only expose IDs. The tool can attach files, in the channel or in a thread, when the bot token has `files:write`. Use OpenBot for agent approvals.
 
 ## Focused verification
 

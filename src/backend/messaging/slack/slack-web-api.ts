@@ -54,12 +54,8 @@ export class SlackWebApi {
     params: DynamicRecord = {},
     options: { rateLimitRetries?: number } = {},
   ) {
-    if (
-      this.#channels &&
-      params.channel !== undefined &&
-      (!isString(params.channel) || !this.#channels().includes(params.channel))
-    )
-      return yield* slackFailure(new SlackApiError(method, "channel_not_allowed"));
+    for (const channel of [params.channel, params.channel_id])
+      if (channel !== undefined) yield* this.confine(method, channel);
     const body = new URLSearchParams();
     for (const [key, value] of Object.entries(params)) {
       if (value === undefined || value === null) continue;
@@ -67,6 +63,11 @@ export class SlackWebApi {
     }
     const { payload } = yield* this.#send(method, body, options.rateLimitRetries ?? RATE_LIMIT_RETRIES);
     return payload;
+  });
+
+  readonly confine = Effect.fnUntraced(function* (this: SlackWebApi, method: string, channel: unknown) {
+    if (this.#channels && (!isString(channel) || !this.#channels().includes(channel)))
+      return yield* slackFailure(new SlackApiError(method, "channel_not_allowed"));
   });
 
   readonly upload = Effect.fnUntraced(function* (

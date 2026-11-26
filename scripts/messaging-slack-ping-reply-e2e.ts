@@ -134,6 +134,7 @@ const adapter: MessagingAdapter = {
   postPrivate: unused,
   react: () => Effect.sync(() => void calls.push({ method: "react" })),
   postAnswer: (_target, markdown) => Effect.sync(() => posted("postAnswer", markdown)),
+  postFileWithText: (_target, markdown) => Effect.sync(() => posted("postFileWithText", markdown)),
   upload: unused,
   history: () => Effect.succeed([]),
   recent: unused,
@@ -237,14 +238,14 @@ const pingRows = () =>
     .map((row) => ({ ...row }));
 const delivery = (dedupKey: string) => mailbox.deliveryForKey(`messaging:${record.connectionId}:${dedupKey}`);
 
-async function post(agentId: string, text: string): Promise<{ messageId: string }> {
+async function post(agentId: string, text: string, files: string[] = []): Promise<{ messageId: string }> {
   const response = await runCauseEffect(
     agents.messaging.outboundTool(
       agentId,
       { threadId: `thread-${agentId}`, turnId: `turn-${agentId}` },
       "messaging_post",
-      { connection: record.connectionId, place: CHANNEL, text },
-      () => Effect.succeed([]),
+      { connection: record.connectionId, place: CHANNEL, text, files },
+      (paths) => Effect.succeed(paths.map((path) => ({ path, name: "preview.png", mimeType: "image/png" }))),
     ),
   );
   const item = response.contentItems[0];
@@ -267,7 +268,8 @@ try {
   await step("a post with a live mention records the person; other posts record nobody", async () => {
     await post(research.id, "Weekly report, no question. Ask `<@UCODE>` or see [<@ULINK>](https://e.x).");
     assert.deepEqual(pingRows(), [], "A post with no live mention recorded a ping.");
-    const pinged = await post(research.id, `<@${PINGED}> which logo do we ship: A or B?`);
+    const pinged = await post(research.id, `<@${PINGED}> which logo do we ship: A or B?`, ["preview.png"]);
+    assert.equal(calls.at(-1)?.method, "postFileWithText");
     thread = pinged.messageId;
     assert.deepEqual(pingRows(), [
       {

@@ -70,6 +70,15 @@ The Slack card shows connection status and lets you pause, reconnect, or disconn
 
 Mention the bot from the configured Slack account for a thread reply. To post from an OpenBot conversation, ask your agent to use the Slack messaging tool to send your text to an approved channel. Include the channel ID when the bot's Slack permissions only expose IDs. The tool can attach files, in the channel or in a thread, when the bot token has `files:write`. Use OpenBot for agent approvals.
 
+For a creative review card, give `messaging_post` one PNG, JPEG or GIF in `files`. Put a short summary in `text` and put a Markdown link labelled exactly `Review creative` on its own last line:
+
+```markdown
+**Story title** · Instagram and Facebook
+[Review creative](https://review.example.com/story/)
+```
+
+Slack shows the image and a button in one message. The button opens the review page. Use the returned `messageId` as `replyTo` for follow-up messages. The preview link can use HTTP on a private network. The reviewer needs access to that network.
+
 ## Focused verification
 
 ```sh

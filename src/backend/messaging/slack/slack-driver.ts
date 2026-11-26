@@ -241,7 +241,7 @@ class SlackAdapter implements MessagingAdapter {
     target: MessageTarget,
     files: MessagingAnswerFile[],
   ) {
-    if (this.socket) return { skipped: files.map((file) => file.name), firstId: null };
+    yield* this.#api.confine("files.completeUploadExternal", target.platformChannelId);
     const skipped: string[] = [];
     const uploaded: Array<{ id: string; title: string }> = [];
     for (const file of files) {

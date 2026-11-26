@@ -1852,7 +1852,7 @@ export class MessagingService {
           ...(guildId
             ? { url: `https://discord.com/channels/${guildId}/${target.platformChannelId}/${captioned.success}` }
             : {}),
-          ...directPing(`${text}\nFiles: ${single.name}`),
+          ...(pinged.length ? { ping: { userIds: pinged, text } } : directPing(`${text}\nFiles: ${single.name}`)),
         };
       }
     }

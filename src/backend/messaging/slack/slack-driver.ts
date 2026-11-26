@@ -236,6 +236,49 @@ class SlackAdapter implements MessagingAdapter {
     return firstId;
   });
 
+  readonly postFileWithText = Effect.fnUntraced(function* (
+    this: SlackAdapter,
+    target: MessageTarget,
+    markdown: string,
+    file: MessagingAnswerFile,
+  ) {
+    if (!this.socket || !["image/png", "image/jpeg", "image/gif"].includes(file.mimeType)) return null;
+    const review = reviewLink(markdown);
+    if (!review) return null;
+    yield* this.#api.confine("chat.postMessage", target.platformChannelId);
+    const uploaded = yield* this.#uploadFile(file);
+    if (!uploaded) return yield* new MessagingAdapterError({ cause: new SlackApiError("files", "invalid_file_size") });
+    yield* this.#api.call("files.completeUploadExternal", { files: [uploaded] });
+    return yield* this.#postText(target, slackMrkdwn(markdown, true), [
+      { type: "section", text: { type: "mrkdwn", text: review.summary, verbatim: true } },
+      { type: "image", slack_file: { id: uploaded.id }, alt_text: file.name },
+      {
+        type: "actions",
+        elements: [
+          {
+            type: "button",
+            action_id: "openbot_review_creative",
+            text: { type: "plain_text", text: "Review creative" },
+            url: review.url,
+          },
+        ],
+      },
+    ]);
+  });
+
+  readonly #uploadFile = Effect.fnUntraced(function* (this: SlackAdapter, file: MessagingAnswerFile) {
+    const bytes = yield* adapterIo(() => readFile(file.path));
+    if (bytes.byteLength > UPLOAD_BYTES || bytes.byteLength === 0) return null;
+    const ticket = yield* this.#api.call("files.getUploadURLExternal", {
+      filename: file.name,
+      length: String(bytes.byteLength),
+    });
+    if (!isString(ticket.upload_url) || !isString(ticket.file_id))
+      return yield* new MessagingAdapterError({ cause: new SlackApiError("files", "no_upload_url") });
+    yield* this.#api.uploadBytes(ticket.upload_url, bytes, file.mimeType);
+    return { id: ticket.file_id, title: file.name };
+  });
+
   readonly upload = Effect.fnUntraced(function* (
     this: SlackAdapter,
     target: MessageTarget,
@@ -245,20 +288,7 @@ class SlackAdapter implements MessagingAdapter {
     const skipped: string[] = [];
     const uploaded: Array<{ id: string; title: string }> = [];
     for (const file of files) {
-      const attempt = yield* Effect.result(
-        Effect.gen({ self: this }, function* () {
-          const bytes = yield* adapterIo(() => readFile(file.path));
-          if (bytes.byteLength > UPLOAD_BYTES || bytes.byteLength === 0) return null;
-          const ticket = yield* this.#api.call("files.getUploadURLExternal", {
-            filename: file.name,
-            length: String(bytes.byteLength),
-          });
-          if (!isString(ticket.upload_url) || !isString(ticket.file_id))
-            return yield* new MessagingAdapterError({ cause: new SlackApiError("files", "no_upload_url") });
-          yield* this.#api.uploadBytes(ticket.upload_url, bytes, file.mimeType);
-          return { id: ticket.file_id, title: file.name };
-        }),
-      );
+      const attempt = yield* Effect.result(this.#uploadFile(file));
       if (Result.isFailure(attempt) || attempt.success === null) skipped.push(file.name);
       else uploaded.push(attempt.success);
     }
@@ -500,11 +530,13 @@ class SlackAdapter implements MessagingAdapter {
     this: SlackAdapter,
     target: MessageTarget,
     text: string,
+    blocks?: DynamicRecord[],
   ): Effect.fn.Return<string, MessagingAdapterError> {
     const response = yield* this.#api.call("chat.postMessage", {
       channel: target.platformChannelId,
       thread_ts: target.replyThreadId ?? undefined,
       text,
+      blocks,
       unfurl_links: false,
       unfurl_media: false,
     });
@@ -538,6 +570,16 @@ class SlackAdapter implements MessagingAdapter {
 export interface SlackDriverOptions {
   origin?: string;
   ingress?: MessagingIngress;
+}
+
+function reviewLink(markdown: string): { url: string; summary: string } | null {
+  const lines = markdown.trim().split("\n");
+  const match = /^\[Review creative\]\((https?:\/\/[^\s()<>|]+)\)$/.exec(lines.pop()?.trim() ?? "");
+  if (!match?.[1] || !URL.canParse(match[1])) return null;
+  const url = new URL(match[1]);
+  if (url.username || url.password || url.href.length > 3000) return null;
+  const summary = slackMrkdwn(lines.join("\n").trim(), true);
+  return summary && summary.length <= 3000 ? { url: url.href, summary } : null;
 }
 
 function responseMessages(response: DynamicRecord): DynamicRecord[] {
